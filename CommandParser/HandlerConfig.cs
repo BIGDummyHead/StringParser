@@ -14,7 +14,6 @@ namespace CommandParser
         public static HandlerConfig Default => new HandlerConfig()
         {
             IgnoreCase = true,
-            ErrorWriter = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true },
             Prefix = ""
         };
 
@@ -30,7 +29,13 @@ namespace CommandParser
         /// <summary>
         /// Writes any errors to this 
         /// </summary>
-        public StreamWriter ErrorWriter { get; init; }
+        public event Action<string> OnLog;
+
+        internal void SendMessage(string msg)
+        {
+            OnLog?.Invoke(msg);
+        }
+
         /// <summary>
         /// Ignore case when invoking commands
         /// </summary>
@@ -43,8 +48,6 @@ namespace CommandParser
         /// </summary>
         public HandlerConfig()
         {
-            if (ErrorWriter is null)
-                ErrorWriter = new StreamWriter(Console.OpenStandardOutput());
         }
     }
 }

@@ -54,12 +54,12 @@ namespace CommandParser
 
             if (words.Length < 1)
             {
-                Options.ErrorWriter.WriteLine("Words length invalid");
+                Options.SendMessage("Words length invalid");
                 return;
             }
             else if (!words[0].StartsWith(Options.Prefix))
             {
-                Options.ErrorWriter.WriteLine("Prefix invalid");
+                Options.SendMessage("Prefix invalid");
                 return;
             }
 
@@ -67,7 +67,7 @@ namespace CommandParser
 
             if (!Commands.ContainsKey(commandName, Options.comp))
             {
-                Options.ErrorWriter.WriteLine($"'{commandName}' is not registered");
+                Options.SendMessage($"'{commandName}' is not registered");
                 return;
             }
             string[] arguments = words[1..];
@@ -76,7 +76,7 @@ namespace CommandParser
             ParameterInfo[] ps = method.GetParameters();
             if (arguments.Length < ps.Length)
             {
-                Options.ErrorWriter.WriteLine("Arguments do not match length");
+                Options.SendMessage("Arguments do not match length");
                 return;
             }
 
@@ -116,7 +116,7 @@ namespace CommandParser
 
                 if (!converted)
                 {
-                    Options.ErrorWriter.WriteLine(er);
+                    Options.SendMessage(er);
                 }
                 else
                     methodInvoke.Add(o);
@@ -236,6 +236,8 @@ namespace CommandParser
 
             var z = reg.GetMethods((BindingFlags)(-1));
 
+            object i = Activator.CreateInstance(reg);
+
             foreach (var x in z)
             {
                 CommandAttribute cmd = x.GetCustomAttribute<CommandAttribute>();
@@ -243,11 +245,11 @@ namespace CommandParser
 
                 if (cmd is not null && ig is null)
                 {
-                    object i = Activator.CreateInstance(x.DeclaringType);
                     AddCommand(cmd, i, x);
-                    modules.Add(reg, (BaseCommandModule)i);
                 }
             }
+
+            modules.Add(reg, (BaseCommandModule)i);
         }
 
         private void AddCommand(CommandAttribute cmd, object instance, MethodInfo info)

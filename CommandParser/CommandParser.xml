@@ -169,7 +169,7 @@
             Does your command require a prefix to be invoked
             </summary>
         </member>
-        <member name="P:CommandParser.HandlerConfig.ErrorWriter">
+        <member name="E:CommandParser.HandlerConfig.OnLog">
             <summary>
             Writes any errors to this 
             </summary>
