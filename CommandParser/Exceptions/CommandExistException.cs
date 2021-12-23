@@ -11,7 +11,7 @@ namespace CommandParser.Exceptions
         /// 
         /// </summary>
         /// <param name="commandName"></param>
-        public CommandExistException(string commandName) : base("Command exist", new Exception($"'{commandName} already exist'"))
+        public CommandExistException(string commandName) : base("Command exist (Name / Arg Count)", new Exception($"'{commandName} already exist'"))
         {
 
         }

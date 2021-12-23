@@ -5,11 +5,25 @@ namespace CommandParser
 {
     internal static class Extensions
     {
-        public static bool ContainsKey<TVal>(this IReadOnlyDictionary<string, TVal> dict, string value, StringComparison comparison)
+        public static int GetIndex<T>(this IEnumerable<T> indexing, Func<T, bool> predicate)
         {
-            foreach (string val in dict.Keys)
+            int index = 0;
+            foreach (T item in indexing)
             {
-                if (val.Equals(value, comparison))
+                if (predicate(item))
+                    return index;
+
+                index++;
+            }
+
+            return -1;
+        }
+
+        public static bool ContainsKey<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
+        {
+            foreach (CommandInfo val in dict.Keys)
+            {
+                if (val == value)
                 {
                     return true;
                 }
@@ -18,11 +32,11 @@ namespace CommandParser
             return false;
         }
 
-        public static TVal GetValue<TVal>(this IReadOnlyDictionary<string, TVal> dict, string value, StringComparison comparison)
+        public static TVal GetValue<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
         {
-            foreach (KeyValuePair<string, TVal> entry in dict)
+            foreach (KeyValuePair<CommandInfo, TVal> entry in dict)
             {
-                if (entry.Key.Equals(value, comparison))
+                if (entry.Key == value)
                 {
                     return entry.Value;
                 }

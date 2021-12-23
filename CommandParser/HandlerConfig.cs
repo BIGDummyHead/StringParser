@@ -11,21 +11,21 @@ namespace CommandParser
         /// <summary>
         /// A default config 
         /// </summary>
+        /// <remarks>Creates a new instance of <see cref="HandlerConfig"/> on get.</remarks>
         public static HandlerConfig Default => new HandlerConfig()
         {
-            IgnoreCase = true,
-            Prefix = ""
         };
 
         /// <summary>
         /// The prefix before each command, does not effect the names of your commands.
         /// </summary>
-        public string Prefix { get; init; }
+        public string Prefix { get; init; } = "";
 
         /// <summary>
         /// Does your command require a prefix to be invoked
         /// </summary>
         public bool HasPrefix => Prefix != string.Empty;
+
         /// <summary>
         /// Writes any errors to this 
         /// </summary>
@@ -39,6 +39,7 @@ namespace CommandParser
         /// <summary>
         /// Ignore case when invoking commands
         /// </summary>
+        /// <remarks>Defaults True</remarks>
         public bool IgnoreCase { get; set; } = true;
 
         internal StringComparison comp => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
