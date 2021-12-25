@@ -54,5 +54,16 @@ namespace CommandParser
 
             return Inherits(inheritsB, b.BaseType);
         }
+
+        public static bool InRange(this int a, int min, int max)
+        {
+            if (max < min)
+                return false;
+            else if (max == min)
+                return true;
+
+            return a <= max && a >= min;
+        }
+
     }
 }
