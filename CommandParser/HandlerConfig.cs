@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 
 namespace CommandParser
 {
@@ -25,6 +24,12 @@ namespace CommandParser
         /// Does your command require a prefix to be invoked
         /// </summary>
         public bool HasPrefix => Prefix != string.Empty;
+
+        /// <summary>
+        /// Determines if one false from <see cref="BaseCommandAttribute.BeforeCommandExecute(object, object[])"/> will stop a command from being invoked
+        /// </summary>
+        /// <remarks>True by default</remarks>
+        public bool ByPopularVote { get; set; } = true;
 
         /// <summary>
         /// Writes any errors to this 

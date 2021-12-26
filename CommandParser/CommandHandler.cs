@@ -109,7 +109,7 @@ namespace CommandParser
             else
                 _cmdInfo.Name = _res.Name;
 
-            List<object> methodInvoke = new List<object>();
+            List<object> methodInvoke = new List<object>(); //this list is responsible for the method invoking
             MethodInfo success = null;
 
             foreach (KeyValuePair<CommandInfo, MethodInfo> cM in _methods) //never use return in here!
@@ -125,83 +125,22 @@ namespace CommandParser
 
                 if (arguments.Length > ps.Length)
                 {
-                    bool hasLast = false; //determines if there is a require params attribute on the last param
-                    for (int p = 0; p < ps.Length; p++)
+                    HandleRequiredAttribute(ps, out bool disable, ref arguments);
+
+                    if (!disable)
                     {
-                        //the current parameter
-                        ParameterInfo pInfo =  ps[p];
-
-                        RequiredParamsAttribute req = pInfo.GetCustomAttribute<RequiredParamsAttribute>();
-
-                        if (req == null)
-                            continue;
-
-                        if (p == ps.Length - 1)
-                            hasLast = true;
-
-                        int to = req.ParamCount + p;
-
-                        if (to > arguments.Length)
-                        {
-                            Options.SendMessage("Not enough arguments sent!");
-                            return; //special exception instead of throwing!
-                        }
-                        string[] _args = arguments[p..to];
-
-                        string joinedArgument = string.Empty;
-
-                        //appends all the arguments into one
-                        foreach (string append in _args)
-                        {
-                            joinedArgument += " ";
-                            joinedArgument += append;
-                        }
-
-                        //we must replace the item at a specific position
-                        int newArgCount = arguments.Length - req.ParamCount + 1;
-
-                        arguments[p] = joinedArgument.Trim();
-
-                        //the rest of the arguments
-                        for (int i = p + 1; i < p + req.ParamCount; i++)
-                        {
-                            arguments[i] = null;
-                        }
-
-                        arguments = arguments.Where(x => x != null).ToArray();
-                    }
-
-                    if(!hasLast)
-                    {
-                        if (ps[^1].GetCustomAttribute<RemainingTextAttribute>() != null)
-                        {
-                            string[] aa = arguments[(ps.Length - 1)..];
-
-                            string a = string.Empty;
-
-                            foreach (string i in aa)
-                            {
-                                a += " ";
-                                a += i;
-                            }
-
-                            a = a.Trim();
-
-                            List<string> wri = new List<string>();
-                            for (int i = 0; i < ps.Length - 1; i++)
-                            {
-                                wri.Add(arguments[i]);
-                            }
-
-                            wri.Add(a);
-
-                            arguments = wri.ToArray();
-                        }
-
+                        HandleRemainingAttribute(ps, ref arguments);
                     }
                 }
 
-                if(arguments.Length != ps.Length) //catches a possible exception
+                AdvancedCommandAttribute aca =  cM.Value.GetCustomAttribute<AdvancedCommandAttribute>();
+
+                if(aca != null)
+                {
+                    aca.OnCollect(ps, ref arguments);
+                }
+
+                if (arguments.Length != ps.Length) //catches a possible exception
                 {
                     Options.SendMessage("Slip. Argument length does not match the Parameter Info Length!");
                     return;
@@ -231,39 +170,142 @@ namespace CommandParser
             }
 
             IEnumerable<BaseCommandAttribute> cmdAttrs = success.GetCustomAttributes<BaseCommandAttribute>();
-            object clsInstance = _instances.GetValue(_cmdInfo);
-            object[] invokes = methodInvoke.ToArray();
+            object methodInstance = _instances.GetValue(_cmdInfo);
+            object[] methodInvokeArray = methodInvoke.ToArray();
 
-            bool cont = true;
-
-            if (success.GetParameters().Length == invokes.Length)
+            if (success.GetParameters().Length == methodInvokeArray.Length)
             {
+                int yea = 0, nei = 0;
+
                 foreach (BaseCommandAttribute attr in cmdAttrs)
                 {
-                    bool im = attr.BeforeCommandExecute(clsInstance, invokes);
-
-                    if (!im)
-                        cont = false;
+                    if (attr.BeforeCommandExecute(methodInstance, methodInvokeArray))
+                        yea++;
+                    else 
+                        nei++;
                 }
+
+                bool cont = Options.ByPopularVote && yea > nei;
+
+                if (!cont)
+                    cont = nei > 0;
 
                 if (cont)
                 {
-                    object returnInstance = success.Invoke(clsInstance, invokes);
+                    object returnInstance = success.Invoke(methodInstance, methodInvokeArray);
 
-                    modules[clsInstance.GetType()].OnCommandExecute(success, clsInstance, invokes, returnInstance);
+                    modules[methodInstance.GetType()].OnCommandExecute(success, methodInstance, methodInvokeArray, returnInstance);
 
 
                     foreach (BaseCommandAttribute attr in cmdAttrs)
                     {
-                        attr.AfterCommandExecute(clsInstance, invokes, returnInstance);
+                        attr.AfterCommandExecute(methodInstance, methodInvokeArray, returnInstance);
                     }
                 }
             }
+            else
+            {
+                Options.SendMessage("Parameter length did not match the Invoking array that would have been supplied.");
+            }
+        }
+
+        void HandleRequiredAttribute(ParameterInfo[] ps, out bool disableRemaining, ref string[] arguments)
+        {
+            disableRemaining = false;
+            for (int p = 0; p < ps.Length; p++)
+            {
+                //the current parameter
+                ParameterInfo pInfo = ps[p];
+
+                RequiredParamsAttribute req = pInfo.GetCustomAttribute<RequiredParamsAttribute>();
+
+                if (req == null)
+                    continue;
+
+                if (p == ps.Length - 1)
+                    disableRemaining = true;
+
+                int to = req.ParamCount + p;
+
+                if (to > arguments.Length)
+                {
+                    Options.SendMessage("Not enough arguments sent!");
+                    return; //special exception instead of throwing!
+                }
+                string[] _args = arguments[p..to];
+
+                string joinedArgument = string.Empty;
+
+                //appends all the arguments into one
+                foreach (string append in _args)
+                {
+                    joinedArgument += " ";
+                    joinedArgument += append;
+                }
+
+                //we must replace the item at a specific position
+                int newArgCount = arguments.Length - req.ParamCount + 1;
+
+                arguments[p] = joinedArgument.Trim();
+
+                //the rest of the arguments
+                for (int i = p + 1; i < p + req.ParamCount; i++)
+                {
+                    arguments[i] = null;
+                }
+
+                arguments = arguments.Where(x => x != null).ToArray();
+            }
+
+        }
+
+        void HandleRemainingAttribute(ParameterInfo[] ps, ref string[] arguments)
+        {
+            if (ps[^1].GetCustomAttribute<RemainingTextAttribute>() != null)
+            {
+                string[] aa = arguments[(ps.Length - 1)..];
+
+                string a = string.Empty;
+
+                foreach (string i in aa)
+                {
+                    a += " ";
+                    a += i;
+                }
+
+                a = a.Trim();
+
+                List<string> wri = new List<string>();
+                for (int i = 0; i < ps.Length - 1; i++)
+                {
+                    wri.Add(arguments[i]);
+                }
+
+                wri.Add(a);
+
+                arguments = wri.ToArray();
+            }
+
+        }
+
+        /// <summary>
+        /// Allows you to cast a string to a Type. Using 
+        /// </summary>
+        /// <typeparam name="T">Any type that can be handled by the <see cref="IConverter{T}"/> or simple conversions</typeparam>
+        /// <param name="parse">Formatted string.</param>
+        /// <param name="converted">The casted string</param>
+        /// <returns>True if the cast was successful</returns>
+        public bool CastString<T>(string parse, out T converted)
+        {
+            bool ret = ConvertString(parse, typeof(T), out object conversion, out _);
+
+            converted = (T)conversion;
+            return ret;
         }
 
         private bool ConvertString(string from, Type info, out object conversion, out string error)
         {
-            if (Contains(info, out int index))
+            if (Contains(info, out int index)) //we dont want to use the can convert method because we use the index here
             {
                 ConverterHelper handler = helpers[index];
 
@@ -573,6 +615,9 @@ namespace CommandParser
         /// <param name="right"></param>
         public static bool operator ==(CommandInfo left, CommandInfo right)
         {
+            if (string.IsNullOrEmpty(left.Name) || string.IsNullOrEmpty(right.Name))
+                return false;
+
             return left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) && left.ParameterCount == right.ParameterCount;
         }
 
