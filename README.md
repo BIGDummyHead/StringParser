@@ -1,3 +1,10 @@
+# BIGDummyHead's Command Parser
+
+This library allows you to parse strings easily. Allowing you to create class instances, invoke methods, setup command modules, create custom converters, and allow for custom attributes to place over commands.
+
+This library is very helpful for programs that expect a string input to do background work and such.
+
+
 ## Registering a Command module.
 
 
@@ -26,7 +33,7 @@ public class BasicCommands : BaseCommandModule
 }
 ```
 
-##Creating commands in a module
+## Creating commands in a module
 
 ```csharp
 using CommandParser;
@@ -51,7 +58,7 @@ class BasicCommands : BaseCommandModule
 }
 ```
 
-##Built-in Attributes
+## Built-in Attributes
 
 ```csharp
 
