@@ -27,7 +27,7 @@ commandHandler.RegisterModule(typeof(BaseCommandModule)); //we can also do this 
 public class BasicCommands : BaseCommandModule
 {
     //this method is invoked when any command is invoked.
-    public override void OnCommandExecute(MethodInfo method, object instance, object[] invokes, object returnInstance)
+    public override async Task OnCommandExecute(MethodInfo method, object instance, object[] invokes, object returnInstance)
     {
     }
 }
@@ -109,14 +109,14 @@ using CommandParser;
 class CustomAttribute : BaseCommandAttribute //all attributes that inherit this are collected by the handler.
 {
 
-    public override bool BeforeCommandExecute(object classInstance, object[] methodParams)
+    public override async Task<bool> BeforeCommandExecute(object classInstance, object[] methodParams)
     {
 
         //if true then the command will continue. This is determined also with the HandlerConfig.ByPopularVote
         return true;
     }
 
-    public override void AfterCommandExecute(object classInstance, object[] methodParams, object returnInstance)
+    public override async Task AfterCommandExecute(object classInstance, object[] methodParams, object returnInstance)
     {
     }
 }
@@ -130,7 +130,7 @@ class CustomAttribute : BaseCommandAttribute //all attributes that inherit this 
 
 class AdvancedAttr : AdvancedCommandAttribute
 {
-    public override void OnCollect(ParameterInfo[] pInfo, ref string[] args)
+    public override async Task<string[]> OnCollect(ParameterInfo[] pInfo, string[] args)
     {
 	//we will make any changes to the args as we please, allowing us to modify the handler before it selects an appropriate method!
     }
