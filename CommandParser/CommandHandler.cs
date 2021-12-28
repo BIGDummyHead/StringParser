@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace CommandParser
 {
@@ -79,7 +80,7 @@ namespace CommandParser
         /// </summary>
         /// <param name="invoker"></param>
         /// <exception cref="Exceptions.InvalidConversionException"></exception>
-        public void Invoke(string invoker)
+        public async Task Invoke(string invoker)
         {
             string[] words = invoker.Split(' ');
 
@@ -133,11 +134,11 @@ namespace CommandParser
                     }
                 }
 
-                AdvancedCommandAttribute aca =  cM.Value.GetCustomAttribute<AdvancedCommandAttribute>();
+                AdvancedCommandAttribute aca = cM.Value.GetCustomAttribute<AdvancedCommandAttribute>();
 
-                if(aca != null)
+                if (aca != null)
                 {
-                    aca.OnCollect(ps, ref arguments);
+                    arguments = await aca.OnCollect(ps, arguments);
                 }
 
                 if (arguments.Length != ps.Length) //catches a possible exception
@@ -179,9 +180,9 @@ namespace CommandParser
 
                 foreach (BaseCommandAttribute attr in cmdAttrs)
                 {
-                    if (attr.BeforeCommandExecute(methodInstance, methodInvokeArray))
+                    if (await attr.BeforeCommandExecute(methodInstance, methodInvokeArray))
                         yea++;
-                    else 
+                    else
                         nei++;
                 }
 
@@ -194,12 +195,12 @@ namespace CommandParser
                 {
                     object returnInstance = success.Invoke(methodInstance, methodInvokeArray);
 
-                    modules[methodInstance.GetType()].OnCommandExecute(success, methodInstance, methodInvokeArray, returnInstance);
+                    await modules[methodInstance.GetType()].OnCommandExecute(success, methodInstance, methodInvokeArray, returnInstance);
 
 
                     foreach (BaseCommandAttribute attr in cmdAttrs)
                     {
-                        attr.AfterCommandExecute(methodInstance, methodInvokeArray, returnInstance);
+                        await attr.AfterCommandExecute(methodInstance, methodInvokeArray, returnInstance);
                     }
                 }
             }
@@ -275,15 +276,24 @@ namespace CommandParser
 
                 a = a.Trim();
 
-                List<string> wri = new List<string>();
-                for (int i = 0; i < ps.Length - 1; i++)
-                {
-                    wri.Add(arguments[i]);
-                }
+                //List<string> wri = new List<string>();
+                //for (int i = 0; i < ps.Length - 1; i++)
+                //{
+                //    wri.Add(arguments[i]);
+                //}
 
-                wri.Add(a);
+                //wri.Add(a);
 
-                arguments = wri.ToArray();
+                //arguments = wri.ToArray();
+
+                //better 
+                string[] wri = new string[ps.Length];
+
+                Array.Copy(arguments, wri, ps.Length - 1);
+
+                wri[^1] = a;
+
+                arguments = wri;
             }
 
         }

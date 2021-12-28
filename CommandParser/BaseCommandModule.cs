@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Threading.Tasks;
 
 namespace CommandParser
 {
@@ -8,6 +9,7 @@ namespace CommandParser
     public abstract class BaseCommandModule
     {
 #nullable enable
+#pragma warning disable CS1998
         /// <summary>
         /// Called when any in the module is invoked. 
         /// </summary>
@@ -15,10 +17,11 @@ namespace CommandParser
         /// <param name="instance">The instance used to invoke the <paramref name="method"/>.</param>
         /// <param name="invokes">The parameters used to invoke the <paramref name="method"/></param>
         /// <param name="returnInstance">Return of the command if any</param>
-        public virtual void OnCommandExecute(MethodInfo method, object instance, object[] invokes, object? returnInstance)
+        public virtual async Task OnCommandExecute(MethodInfo method, object instance, object[] invokes, object? returnInstance)
         {
 
         }
+#pragma warning restore CS1998
 #nullable disable
     }
 }

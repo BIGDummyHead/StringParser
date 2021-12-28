@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace CommandParser.Interfaces
 {
@@ -29,7 +30,7 @@ namespace CommandParser.Interfaces
                 Convert = delegate (string parse)
                 {
                     return converter.Convert(parse);
-                }, 
+                },
                 ConversionType = typeof(T)
             };
         }
