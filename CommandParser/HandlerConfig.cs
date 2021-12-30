@@ -8,12 +8,25 @@ namespace CommandParser
     public sealed class HandlerConfig
     {
         /// <summary>
-        /// A default config 
+        /// The global default Config that can be set and gotten.
         /// </summary>
-        /// <remarks>Creates a new instance of <see cref="HandlerConfig"/> on get.</remarks>
-        public static HandlerConfig Default => new HandlerConfig()
+        public static HandlerConfig Default 
         {
-        };
+            get
+            {
+                return new HandlerConfig(_global);
+            }
+
+            set
+            {
+                if(value == null)
+                    return;
+
+                    _global = value;
+            }
+        }
+
+        private static HandlerConfig _global = new HandlerConfig();
 
         /// <summary>
         /// The prefix before each command, does not effect the names of your commands.
@@ -55,5 +68,16 @@ namespace CommandParser
         public HandlerConfig()
         {
         }
+    
+        /// <summary>
+        ///Copies the values from another config
+        /// </summary>
+        public HandlerConfig(HandlerConfig config)
+        {
+            Prefix = config.Prefix;
+            ByPopularVote = config.ByPopularVote;
+            IgnoreCase = config.IgnoreCase;
+        }
+
     }
 }

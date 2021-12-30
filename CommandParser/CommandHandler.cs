@@ -74,6 +74,7 @@ namespace CommandParser
 
         }
 
+        
         /// <summary>
         /// Invoke a command, must start with the prefix - name - arguments
         /// <para>Example: !name arg1 arg2</para>
