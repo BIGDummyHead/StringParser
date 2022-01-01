@@ -13,17 +13,23 @@ namespace CommandParser
     /// </summary>
     public sealed class CommandHandler
     {
-        private readonly Dictionary<CommandInfo, CommandAttribute> _commands = new Dictionary<CommandInfo, CommandAttribute>();
-        private readonly Dictionary<CommandInfo, object> _instances = new Dictionary<CommandInfo, object>();
-        private readonly Dictionary<CommandInfo, MethodInfo> _methods = new Dictionary<CommandInfo, MethodInfo>();
-        private readonly Dictionary<Type, BaseCommandModule> modules = new Dictionary<Type, BaseCommandModule>();
-        private readonly List<ConverterHelper> helpers = new List<ConverterHelper>();
+        internal readonly Dictionary<CommandInfo, CommandAttribute> _commands = new Dictionary<CommandInfo, CommandAttribute>();
+        internal readonly Dictionary<CommandInfo, object> _instances = new Dictionary<CommandInfo, object>();
+        internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new Dictionary<CommandInfo, MethodInfo>();
+        internal readonly Dictionary<Type, BaseCommandModule> modules = new Dictionary<Type, BaseCommandModule>();
+        internal readonly List<ConverterHelper> helpers = new List<ConverterHelper>();
 
 
         /// <summary>
         /// Commands being invoked.
         /// </summary>
         public IReadOnlyDictionary<CommandInfo, CommandAttribute> Commands => _commands;
+
+
+        /// <summary>
+        /// Types of registered modules.
+        /// </summary>
+        public IEnumerable<Type> Modules => modules.Keys;
 
 
         /// <summary>
@@ -74,7 +80,7 @@ namespace CommandParser
 
         }
 
-        
+
         /// <summary>
         /// Invoke a command, must start with the prefix - name - arguments
         /// <para>Example: !name arg1 arg2</para>
@@ -125,22 +131,18 @@ namespace CommandParser
                     continue;
                 }
 
-                if (arguments.Length > ps.Length)
+                for (int i = 0; i < ps.Length; i++)
                 {
-                    HandleRequiredAttribute(ps, out bool disable, ref arguments);
+                    ParameterInfo on = ps[i];
 
-                    if (!disable)
+                    IEnumerable<CommandParameterAttribute> cpa = on.GetCustomAttributes<CommandParameterAttribute>();
+
+                    foreach (CommandParameterAttribute pinvokes in cpa)
                     {
-                        HandleRemainingAttribute(ps, ref arguments);
+                        arguments = await pinvokes.OnCollect(on, arguments, ps);
                     }
                 }
 
-                AdvancedCommandAttribute aca = cM.Value.GetCustomAttribute<AdvancedCommandAttribute>();
-
-                if (aca != null)
-                {
-                    arguments = await aca.OnCollect(ps, arguments);
-                }
 
                 if (arguments.Length != ps.Length) //catches a possible exception
                 {
@@ -209,94 +211,6 @@ namespace CommandParser
             {
                 Options.SendMessage("Parameter length did not match the Invoking array that would have been supplied.");
             }
-        }
-
-        void HandleRequiredAttribute(ParameterInfo[] ps, out bool disableRemaining, ref string[] arguments)
-        {
-            disableRemaining = false;
-            for (int p = 0; p < ps.Length; p++)
-            {
-                //the current parameter
-                ParameterInfo pInfo = ps[p];
-
-                RequiredParamsAttribute req = pInfo.GetCustomAttribute<RequiredParamsAttribute>();
-
-                if (req == null)
-                    continue;
-
-                if (p == ps.Length - 1)
-                    disableRemaining = true;
-
-                int to = req.ParamCount + p;
-
-                if (to > arguments.Length)
-                {
-                    Options.SendMessage("Not enough arguments sent!");
-                    return; //special exception instead of throwing!
-                }
-                string[] _args = arguments[p..to];
-
-                string joinedArgument = string.Empty;
-
-                //appends all the arguments into one
-                foreach (string append in _args)
-                {
-                    joinedArgument += " ";
-                    joinedArgument += append;
-                }
-
-                //we must replace the item at a specific position
-                int newArgCount = arguments.Length - req.ParamCount + 1;
-
-                arguments[p] = joinedArgument.Trim();
-
-                //the rest of the arguments
-                for (int i = p + 1; i < p + req.ParamCount; i++)
-                {
-                    arguments[i] = null;
-                }
-
-                arguments = arguments.Where(x => x != null).ToArray();
-            }
-
-        }
-
-        void HandleRemainingAttribute(ParameterInfo[] ps, ref string[] arguments)
-        {
-            if (ps[^1].GetCustomAttribute<RemainingTextAttribute>() != null)
-            {
-                string[] aa = arguments[(ps.Length - 1)..];
-
-                string a = string.Empty;
-
-                foreach (string i in aa)
-                {
-                    a += " ";
-                    a += i;
-                }
-
-                a = a.Trim();
-
-                //List<string> wri = new List<string>();
-                //for (int i = 0; i < ps.Length - 1; i++)
-                //{
-                //    wri.Add(arguments[i]);
-                //}
-
-                //wri.Add(a);
-
-                //arguments = wri.ToArray();
-
-                //better 
-                string[] wri = new string[ps.Length];
-
-                Array.Copy(arguments, wri, ps.Length - 1);
-
-                wri[^1] = a;
-
-                arguments = wri;
-            }
-
         }
 
         /// <summary>

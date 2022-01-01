@@ -1,38 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
+using CommandParser.Info;
 
 namespace CommandParser
 {
-    internal static class Extensions
+    internal class EnumCompare<T> : IComparer<T> where T : Enum
     {
-        public static int GetIndex<T>(this IEnumerable<T> indexing, Func<T, bool> predicate)
+        public int Compare(T x, T y)
         {
-            int index = 0;
-            foreach (T item in indexing)
-            {
-                if (predicate(item))
-                    return index;
+            int numX = Convert.ToInt32(x);
+            int numY = Convert.ToInt32(y);
 
-                index++;
-            }
-
-            return -1;
+            return numX < numY ? -1 : (numX > numY ? 1 : 0);
         }
+    }
 
-        public static bool ContainsKey<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
+    /// <summary>
+    /// Extensions for the library
+    /// </summary>
+    public static class Extensions
+    {
+
+        /// <summary>
+        /// Gets all information about a module.
+        /// </summary>
+        public static IEnumerable<Collector> GetInfoOnModule(this CommandHandler handler, bool includeIgnore, Func<MethodInfo, object> collectOthers = null)
         {
-            foreach (CommandInfo val in dict.Keys)
+            foreach (Type module in handler.Modules)
             {
-                if (val == value)
+                foreach (Collector c in Collector.GetInfo(module, includeIgnore, collectOthers))
                 {
-                    return true;
+                    yield return c;
                 }
             }
-
-            return false;
         }
 
-        public static TVal GetValue<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
+        internal static TVal GetValue<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
         {
             foreach (KeyValuePair<CommandInfo, TVal> entry in dict)
             {
@@ -45,7 +49,7 @@ namespace CommandParser
             return default;
         }
 
-        public static bool Inherits(this Type inheritsB, Type b)
+        internal static bool Inherits(this Type inheritsB, Type b)
         {
             if (inheritsB.BaseType == b)
                 return true;
@@ -54,16 +58,17 @@ namespace CommandParser
 
             return Inherits(inheritsB, b.BaseType);
         }
-
-        public static bool InRange(this int a, int min, int max)
+        
+        internal static string Join(this string[] join)
         {
-            if (max < min)
-                return false;
-            else if (max == min)
-                return true;
+            string joined = string.Empty;
 
-            return a <= max && a >= min;
+            foreach (string joinItem in join)
+            {
+                joined += joinItem + " ";
+            }
+
+            return joined.Trim() ;
         }
-
     }
 }

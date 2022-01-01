@@ -96,6 +96,14 @@ class BasicCommands : BaseCommandModule
     [Command("say")]
     public void SayLong(string name, [RequiredParams(2)] string twoThing, [RequiredParams(3)] string threeThing) { } //therefore this command will take 6 total arguments.
 
+    //Up To
+
+    //This attribute may only be used on the last parameter, it allows you to provide extra but not necessary arguments.
+
+    [Command("other")]
+    public void Other(string a, [UpTo(3)]string b) {}
+    //this command will take 2-4 arguments.
+
 }
 
 ```
@@ -128,9 +136,9 @@ class CustomAttribute : BaseCommandAttribute //all attributes that inherit this 
 
 ```csharp
 
-class AdvancedAttr : AdvancedCommandAttribute
+class CommandAttribute : CommandParameterAttribute
 {
-    public override async Task<string[]> OnCollect(ParameterInfo[] pInfo, string[] args)
+    public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
     {
 	//we will make any changes to the args as we please, allowing us to modify the handler before it selects an appropriate method!
     }
