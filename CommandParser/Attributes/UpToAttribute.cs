@@ -16,7 +16,7 @@ namespace CommandParser
         /// </summary>
         /// <param name="allowedParamCount">Parameters allowed</param>
         /// <exception cref="Exception">Thrown if <paramref name="allowedParamCount"/>is less than 1</exception>
-        public UpToAttribute(int allowedParamCount)
+        public UpToAttribute(int allowedParamCount) : base(Importance.Low)
         {
             if (allowedParamCount < 1)
                 throw new Exception("Cannot have a less than 1 parameter.");

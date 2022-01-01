@@ -3,6 +3,7 @@
     /// <summary>
     /// The command attribute, used over any method within a <see cref="BaseCommandModule"/>
     /// </summary>
+    /// <remarks>This command is special and cannot be replicated.</remarks>
     public sealed class CommandAttribute : BaseCommandAttribute
     {
         /// <summary>

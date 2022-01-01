@@ -19,7 +19,7 @@ namespace CommandParser
         /// <summary>
         /// Specify how many arguments need to be passed in
         /// </summary>
-        public RequiredParamsAttribute(int pCount)
+        public RequiredParamsAttribute(int pCount) : base(Importance.Critical)
         {
             if (pCount <= 1)
                 throw new Exception("Parameter count cannot be equal or less than 1");

@@ -7,9 +7,23 @@ namespace CommandParser
     /// <summary>
     /// An attribute that is collected to provide information to the CommandHandler about chaning the arguments and such
     /// </summary>
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
     public class CommandParameterAttribute : Attribute
     {
+
+        /// <summary>
+        /// The level of importance of the parameter
+        /// </summary>
+        public readonly Importance importance;
+
+        //a ctor with the importance parameter
+        /// <summary>
+        /// </summary>
+        public CommandParameterAttribute(Importance importance)
+        {
+            this.importance = importance;
+        }
+
 #pragma warning disable CS1998 //async method does not contain await.
         /// <summary>
         /// When this attribute is collected in the <see cref="CommandHandler"/>
@@ -22,9 +36,13 @@ namespace CommandParser
             return args;
         }
 
+                
+
 
 #pragma warning restore CS1998
     }
+
+    
 
 
 }

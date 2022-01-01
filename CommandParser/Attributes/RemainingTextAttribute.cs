@@ -11,6 +11,14 @@ namespace CommandParser
     public sealed class RemainingTextAttribute : CommandParameterAttribute
     {
 
+        //empty summary tag
+        /// <summary>
+        /// </summary>
+        public RemainingTextAttribute() : base(Importance.High)
+        {
+            
+        }
+
 #pragma warning disable 
         public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
         {

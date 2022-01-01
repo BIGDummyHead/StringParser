@@ -6,7 +6,7 @@ namespace CommandParser
     /// <summary>
     /// A base attribute used for attributes above commands.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Method)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public abstract class BaseCommandAttribute : Attribute
     {
 

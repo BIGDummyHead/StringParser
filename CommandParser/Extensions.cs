@@ -3,17 +3,6 @@ using System.Collections.Generic;
 
 namespace CommandParser
 {
-    internal class EnumCompare<T> : IComparer<T> where T : Enum
-    {
-        public int Compare(T x, T y)
-        {
-            int numX = Convert.ToInt32(x);
-            int numY = Convert.ToInt32(y);
-
-            return numX < numY ? -1 : (numX > numY ? 1 : 0);
-        }
-    }
-
     /// <summary>
     /// Extensions for the library
     /// </summary>
