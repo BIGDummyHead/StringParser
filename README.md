@@ -146,7 +146,6 @@ class CustomAttribute : BaseCommandAttribute //all attributes that inherit this 
 ```
 
 #### We can also use the AdvancedCommandAttribute, this allows us to modify and edit the argument array provided to the Handler.
-`Note: This attribute also inherits the BaseCommandAttribute`
 
 ```csharp
 
