@@ -5,6 +5,20 @@ This library allows you to parse strings easily. Allowing you to create class in
 This library is very helpful for programs that expect a string input to do background work and such.
 
 
+```csharp
+
+//invoking
+
+using CommandParser;
+
+CommandHandler handler = new CommandHandler();
+
+handler.RegisterModule<MyModule>();
+
+handler.Invoke("name arg1 arg2");
+
+```
+
 ## Registering a Command module.
 
 
