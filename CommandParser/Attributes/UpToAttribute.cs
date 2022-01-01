@@ -31,9 +31,7 @@ namespace CommandParser
         /// <param name="args"></param>
         public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
         {
-            bool isLast = parameters[^1] == pInfo;
-
-            if (!isLast)
+            if (parameters[^1] != pInfo)
                 return args;
             else if (allowed == 1 || pInfo.GetCustomAttribute<UpToAttribute>() == null || pInfo.GetCustomAttribute<RemainingTextAttribute>() != null)
                 return args;
