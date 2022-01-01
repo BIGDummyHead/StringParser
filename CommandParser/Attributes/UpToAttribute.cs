@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CommandParser
@@ -19,7 +16,7 @@ namespace CommandParser
         /// </summary>
         /// <param name="allowedParamCount">Parameters allowed</param>
         /// <exception cref="Exception">Thrown if <paramref name="allowedParamCount"/>is less than 1</exception>
-        public UpToAttribute(int allowedParamCount) 
+        public UpToAttribute(int allowedParamCount)
         {
             if (allowedParamCount < 1)
                 throw new Exception("Cannot have a less than 1 parameter.");
@@ -61,5 +58,5 @@ namespace CommandParser
 #pragma warning restore
     }
 
-    
+
 }

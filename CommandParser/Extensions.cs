@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
-using CommandParser.Info;
 
 namespace CommandParser
 {
@@ -43,7 +41,7 @@ namespace CommandParser
 
             return Inherits(inheritsB, b.BaseType);
         }
-        
+
         internal static string Join(this string[] join)
         {
             string joined = string.Empty;
@@ -53,7 +51,7 @@ namespace CommandParser
                 joined += joinItem + " ";
             }
 
-            return joined.Trim() ;
+            return joined.Trim();
         }
     }
 }

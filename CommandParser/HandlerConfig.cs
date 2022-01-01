@@ -10,7 +10,7 @@ namespace CommandParser
         /// <summary>
         /// The global default Config that can be set and gotten.
         /// </summary>
-        public static HandlerConfig Default 
+        public static HandlerConfig Default
         {
             get
             {
@@ -19,10 +19,10 @@ namespace CommandParser
 
             set
             {
-                if(value == null)
+                if (value == null)
                     return;
 
-                    _global = value;
+                _global = value;
             }
         }
 
@@ -68,7 +68,7 @@ namespace CommandParser
         public HandlerConfig()
         {
         }
-    
+
         /// <summary>
         ///Copies the values from another config
         /// </summary>

@@ -24,7 +24,7 @@ namespace CommandParser
             if (pCount <= 1)
                 throw new Exception("Parameter count cannot be equal or less than 1");
 
-            ParamCount = pCount ;
+            ParamCount = pCount;
         }
 
 #pragma warning disable
