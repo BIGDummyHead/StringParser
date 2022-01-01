@@ -21,21 +21,6 @@ namespace CommandParser
     /// </summary>
     public static class Extensions
     {
-
-        /// <summary>
-        /// Gets all information about a module.
-        /// </summary>
-        public static IEnumerable<Collector> GetInfoOnModule(this CommandHandler handler, bool includeIgnore, Func<MethodInfo, object> collectOthers = null)
-        {
-            foreach (Type module in handler.Modules)
-            {
-                foreach (Collector c in Collector.GetInfo(module, includeIgnore, collectOthers))
-                {
-                    yield return c;
-                }
-            }
-        }
-
         internal static TVal GetValue<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
         {
             foreach (KeyValuePair<CommandInfo, TVal> entry in dict)
