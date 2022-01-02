@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CommandParser.Interfaces;
+using System;
+using System.Collections.Generic;
 
 namespace CommandParser
 {
@@ -45,13 +47,34 @@ namespace CommandParser
         public bool ByPopularVote { get; set; } = true;
 
         /// <summary>
-        /// Writes any errors to this 
+        /// The logger used for the config and the <see cref="CommandHandler"/>
         /// </summary>
-        public event Action<string> OnLog;
+        public ILog Logger { get; set; } = new Logger();
 
-        internal void SendMessage(string msg)
+        /// <summary>
+        /// Sends a message to all Loggers in the HandlerConfig
+        /// </summary>
+        /// <param name="msg">The message to send</param>
+        /// <param name="level">The type of log</param>
+        internal void ToLog(string msg, LogLevel level)
         {
-            OnLog?.Invoke(msg);
+                Logger.Log(msg, level);
+
+                switch (level)
+                {
+                    case LogLevel.Debug:
+                        Logger.LogDebug(msg);
+                        break;
+                    case LogLevel.Information:
+                        Logger.LogInfo(msg);
+                        break;
+                    case LogLevel.Warning:
+                        Logger.LogWarning(msg);
+                        break;
+                    case LogLevel.Error:
+                        Logger.LogError(msg);
+                        break;
+                }
         }
 
         /// <summary>
@@ -60,7 +83,7 @@ namespace CommandParser
         /// <remarks>Defaults True</remarks>
         public bool IgnoreCase { get; set; } = true;
 
-        internal StringComparison comp => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        internal StringComparison Comp => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
         /// <summary>
         /// A config for <see cref="CommandHandler"/>
@@ -79,5 +102,18 @@ namespace CommandParser
             IgnoreCase = config.IgnoreCase;
         }
 
+    }
+
+    /// <summary>
+    /// Logging levels
+    /// </summary>
+    public enum LogLevel
+    {
+#pragma warning disable
+        Debug,
+        Information,
+        Warning,
+        Error
+#pragma warning restore
     }
 }

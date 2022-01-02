@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CommandParser
 {
@@ -8,6 +9,17 @@ namespace CommandParser
     /// </summary>
     public static class Extensions
     {
+        internal static T[] RemoveWhen<T>(this T[] ar, Func<T, bool> pred)
+        {
+            for (int i = 0; i < ar.Length; i++)
+            {
+                if (!pred(ar[i]))
+                    ar[i] = default;
+            }
+
+            return ar.Where(x=> x != null).ToArray();
+        }
+
         internal static TVal GetValue<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
         {
             foreach (KeyValuePair<CommandInfo, TVal> entry in dict)

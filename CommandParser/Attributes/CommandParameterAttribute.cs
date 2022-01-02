@@ -10,6 +10,10 @@ namespace CommandParser
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
     public class CommandParameterAttribute : Attribute
     {
+        /// <summary>
+        /// The instance of the handler used to invoke the <see cref="OnCollect(ParameterInfo, string[], ParameterInfo[])"/> method
+        /// </summary>
+        public CommandHandler Handler { get; internal set; }
 
         /// <summary>
         /// The level of importance of the parameter

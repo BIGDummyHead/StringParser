@@ -93,12 +93,12 @@ namespace CommandParser
 
             if (words.Length < 1)
             {
-                Options.SendMessage("Words length invalid");
+                Options.ToLog("Not enough arguments sent", LogLevel.Information);
                 return;
             }
             else if (!words[0].StartsWith(Options.Prefix))
             {
-                Options.SendMessage("Prefix invalid");
+                Options.ToLog("Prefix invalid", LogLevel.Information);
                 return;
             }
 
@@ -107,11 +107,11 @@ namespace CommandParser
 
             CommandInfo mockInfo = new CommandInfo(commandName, stringArguments.Length);
 
-            CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Options.comp));
+            CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Options.Comp));
 
             if (comparingResult == default)
             {
-                Options.SendMessage($"'{commandName}' is not registered");
+                Options.ToLog($"'{commandName}' is not registered", LogLevel.Warning);
                 return;
             }
             else
@@ -127,7 +127,7 @@ namespace CommandParser
                 ParameterInfo[] methodParameters = method.GetParameters();
                 if (stringArguments.Length < methodParameters.Length)
                 {
-                    Options.SendMessage("Arguments do not match length");
+                    Options.ToLog("Arguments do not match length", LogLevel.Warning);
                     continue;
                 }
 
@@ -137,6 +137,7 @@ namespace CommandParser
 
                     foreach (CommandParameterAttribute pinvokes in loopX.GetCustomAttributes<CommandParameterAttribute>().OrderByDescending(x => x.importance))
                     {
+                        pinvokes.Handler = this;
                         //we should call this method in here because it can effect the total outcome of the command invokemennt
                         stringArguments = await pinvokes.OnCollect(loopX, stringArguments, methodParameters);
                     }
@@ -145,7 +146,7 @@ namespace CommandParser
 
                 if (stringArguments.Length != methodParameters.Length) //catches a possible exception
                 {
-                    Options.SendMessage("Slip. Argument length does not match the Parameter Info Length!");
+                    Options.ToLog("Slip. Argument length does not match the Parameter Info Length!", LogLevel.Error);
                     return;
                 }
 
@@ -154,7 +155,7 @@ namespace CommandParser
                     bool converted = ConvertString(stringArguments[i], methodParameters[i].ParameterType, out object convertedObject, out string possibleError);
                     if (!converted)
                     {
-                        Options.SendMessage(possibleError);
+                        Options.ToLog(possibleError, LogLevel.Error);
                         methodInvoke.Clear(); //clear invoke list
                         continue;
                     }
@@ -168,7 +169,7 @@ namespace CommandParser
 
             if (invokeableMethod == null)
             {
-                Options.SendMessage("Could not find any commands to invoke");
+                Options.ToLog("Could not find any commands to invoke", LogLevel.Warning);
                 return;
             }
 
@@ -207,7 +208,7 @@ namespace CommandParser
             }
             else
             {
-                Options.SendMessage("Parameter length did not match the Invoking array that would have been supplied.");
+                Options.ToLog("Parameter length did not match the Invoking array that would have been supplied.", LogLevel.Error);
             }
         }
 
@@ -289,7 +290,7 @@ namespace CommandParser
         {
             if (!CanConvert(type))
             {
-                Options.SendMessage($"Cannot convert {type.FullName}.");
+                Options.ToLog($"Cannot convert {type.FullName}.", LogLevel.Error);
 
                 converted = default;
                 return false;
@@ -382,7 +383,7 @@ namespace CommandParser
     {
         if (CanConvert<T>())
         {
-            Options.SendMessage($"Handler for {typeof(T).FullName} already exist.");
+            Options.ToLog($"Handler for {typeof(T).FullName} already exist.", LogLevel.Error);
             return;
         }
 
@@ -401,7 +402,7 @@ namespace CommandParser
 
         if (CanConvert<T>())
         {
-            Options.SendMessage($"Handler for {typeof(T).FullName} already exist.");
+            Options.ToLog($"Handler for {typeof(T).FullName} already exist.", LogLevel.Error);
             return;
         }
 
@@ -417,7 +418,7 @@ namespace CommandParser
     {
         if (!CanConvert(converter))
         {
-            Options.SendMessage($"Handler does not exist for {converter.FullName}.");
+            Options.ToLog($"Handler does not exist for {converter.FullName}.", LogLevel.Warning);
             return;
         }
 
