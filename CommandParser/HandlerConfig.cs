@@ -53,7 +53,7 @@ namespace CommandParser
         /// <summary>
         /// Char that splits the commands!
         /// </summary>
-        public char Separator { get; set; } = ' ';
+        public char[] Separator { get; set; } = new char[] { ' ' };
 
         /// <summary>
         /// Uses the <see cref="string.Trim()"/> when invoking <seealso cref="CommandHandler.Invoke(string)"/>

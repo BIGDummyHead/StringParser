@@ -68,7 +68,7 @@ public class RangeAttribute : CommandParameterAttribute
         string[] collectedArgs = args[(parameters.Length - 1)..];
         //check if the amount of arguments is lower than the min
 
-        if (args.Length < parameters.Length)
+        if (args.Length < parameters.Length && min == 0)
         {
             string[] empCopy = new string[args.Length + 1];
             Array.Copy(args, empCopy, args.Length);
