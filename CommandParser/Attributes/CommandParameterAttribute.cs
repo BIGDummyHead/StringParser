@@ -40,13 +40,13 @@ namespace CommandParser
             return args;
         }
 
-                
+
 
 
 #pragma warning restore CS1998
     }
 
-    
+
 
 
 }

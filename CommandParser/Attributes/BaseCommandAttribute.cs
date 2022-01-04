@@ -9,6 +9,10 @@ namespace CommandParser
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public abstract class BaseCommandAttribute : Attribute
     {
+        /// <summary>
+        /// The handler instance that invoked this.
+        /// </summary>
+        public CommandHandler Handler { get; set; }
 
         /// <summary>
         /// Before the command is executed
@@ -36,6 +40,7 @@ namespace CommandParser
         }
 #nullable disable
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-
     }
+
+
 }

@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 namespace CommandParser
 {
     /// <summary>
-    /// An attribute to specify how many arguments need to be passed in
+    /// An attribute to specify how many arguments need to be passed in.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = true)]
     public sealed class RequiredParamsAttribute : CommandParameterAttribute
     {
         /// <summary>
@@ -30,35 +29,16 @@ namespace CommandParser
 #pragma warning disable
         public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
         {
-            if (args.Length > parameters.Length)
-            {
-                for (int p = 0; p < parameters.Length; p++)
-                {
-                    int to = ParamCount + p;
+            int index = parameters.IndexOf(pInfo);
 
-                    if (to > args.Length)
-                    {
-                        return args; //special exception instead of throwing!
-                    }
+            string joined = args[index..(index + ParamCount)].Join();
 
-                    string joinedArgument = args[p..to].Join();
+            for (int i = index + 1; i < index + ParamCount; i++)
+                args[i] = null;
 
-                    //we must replace the item at a specific position
-                    int newArgCount = args.Length - ParamCount + 1;
+            args[index] = joined;
 
-                    args[p] = joinedArgument.Trim();
-
-                    //the rest of the arguments
-                    for (int i = p + 1; i < p + ParamCount; i++)
-                    {
-                        args[i] = null;
-                    }
-
-                    return args.Where(x => x != null).ToArray();
-                }
-            }
-
-            return args;
+            return args.Where(x => x != null).ToArray() ;
         }
 #pragma warning restore
     }

@@ -1,42 +1,17 @@
-﻿using System;
-using System.Reflection;
-using System.Threading.Tasks;
-
-namespace CommandParser
+﻿namespace CommandParser
 {
     /// <summary>
     /// A special attribute, used for remaining text for a command, applied to the very last argument.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false)]
-    public sealed class RemainingTextAttribute : CommandParameterAttribute
+    public sealed class RemainingTextAttribute : RangeAttribute
     {
-
-        //empty summary tag
         /// <summary>
+        /// <see cref="RangeAttribute(int, int)"/> 1, <seealso cref="int.MaxValue"/>
         /// </summary>
-        public RemainingTextAttribute() : base(Importance.High)
+        /// <param name="requiredParam">Whether or not you need to provide a parameter to invoke</param>
+        public RemainingTextAttribute(bool requiredParam = true) : base(requiredParam ? 1 : 0, int.MaxValue)
         {
-            
+
         }
-
-#pragma warning disable 
-        public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
-        {
-            if (pInfo == parameters[^1]) //check if the parameter is the last
-            {
-                string lastArguments = args[(parameters.Length - 1)..].Join();
-
-                string[] copy = new string[parameters.Length];
-
-                Array.Copy(args, copy, parameters.Length - 1);
-
-                copy[^1] = lastArguments;
-
-                return copy;
-            }
-
-            return args;
-        }
-#pragma warning enable
     }
 }

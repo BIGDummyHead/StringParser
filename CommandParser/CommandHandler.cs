@@ -1,7 +1,5 @@
-﻿using CommandParser.Interfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -16,8 +14,7 @@ namespace CommandParser
         internal readonly Dictionary<CommandInfo, CommandAttribute> _commands = new Dictionary<CommandInfo, CommandAttribute>();
         internal readonly Dictionary<CommandInfo, object> _instances = new Dictionary<CommandInfo, object>();
         internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new Dictionary<CommandInfo, MethodInfo>();
-        internal readonly Dictionary<Type, BaseCommandModule> modules = new Dictionary<Type, BaseCommandModule>();
-        internal readonly List<ConverterHelper> helpers = new List<ConverterHelper>();
+        internal readonly Dictionary<Type, BaseCommandModule> _modules = new Dictionary<Type, BaseCommandModule>();
 
 
         /// <summary>
@@ -29,13 +26,18 @@ namespace CommandParser
         /// <summary>
         /// Types of registered modules.
         /// </summary>
-        public IEnumerable<Type> Modules => modules.Keys;
+        public IEnumerable<Type> Modules => _modules.Keys;
 
 
         /// <summary>
         /// Options for your Handler
         /// </summary>
         public HandlerConfig Options { get; init; }
+
+        /// <summary>
+        /// Used converter
+        /// </summary>
+        public StringConverter Converter { get; } = new StringConverter();
 
         /// <summary>
         /// 
@@ -45,31 +47,31 @@ namespace CommandParser
         {
             Options = config;
 
-            helpers.Add(ConverterHelper.Create(delegate (string parse) { return parse; })); //add in basic converters here
+            Converter.RegisterConverter(delegate (string parse) { return parse; }); //add in basic converters here
 
-            helpers.Add(ConverterHelper.Create(delegate (string parse)
+            Converter.RegisterConverter(delegate (string parse)
             {
                 if (int.TryParse(parse, out int result))
                     return result;
 
                 return 0;
-            }));
+            });
 
-            helpers.Add(ConverterHelper.Create(delegate (string parse)
+            Converter.RegisterConverter(delegate (string parse)
             {
                 if (double.TryParse(parse, out double result))
                     return result;
 
                 return 0;
-            }));
+            });
 
-            helpers.Add(ConverterHelper.Create(delegate (string parse)
+            Converter.RegisterConverter(delegate (string parse)
             {
                 if (float.TryParse(parse, out float result))
                     return result;
 
                 return 0;
-            }));
+            });
         }
 
         /// <summary>
@@ -89,7 +91,10 @@ namespace CommandParser
         /// <exception cref="Exceptions.InvalidConversionException"></exception>
         public async Task Invoke(string invoker)
         {
-            string[] words = invoker.Split(' ');
+            if (Options.AlwaysTrim)
+                invoker = invoker.Trim();
+
+            string[] words = invoker.Split(Options.Separator);
 
             if (words.Length < 1)
             {
@@ -125,11 +130,6 @@ namespace CommandParser
                 MethodInfo method = validMethods.Value;
 
                 ParameterInfo[] methodParameters = method.GetParameters();
-                if (stringArguments.Length < methodParameters.Length)
-                {
-                    Options.ToLog("Arguments do not match length", LogLevel.Warning);
-                    continue;
-                }
 
                 for (int i = 0; i < methodParameters.Length; i++)
                 {
@@ -143,16 +143,20 @@ namespace CommandParser
                     }
                 }
 
-
-                if (stringArguments.Length != methodParameters.Length) //catches a possible exception
+                if (stringArguments.Length < methodParameters.Length)
                 {
-                    Options.ToLog("Slip. Argument length does not match the Parameter Info Length!", LogLevel.Error);
+                    Options.ToLog("Arguments do not match length", LogLevel.Warning);
+                    continue;
+                }
+                else if (stringArguments.Length != methodParameters.Length) //catches a possible exception
+                {
+                    Options.ToLog("Argument length does not match the Parameter Info Length!", LogLevel.Error);
                     return;
                 }
 
                 for (int i = 0; i < stringArguments.Length; i++)
                 {
-                    bool converted = ConvertString(stringArguments[i], methodParameters[i].ParameterType, out object convertedObject, out string possibleError);
+                    bool converted = Converter.CastString(stringArguments[i], methodParameters[i].ParameterType, out object convertedObject, out string possibleError);
                     if (!converted)
                     {
                         Options.ToLog(possibleError, LogLevel.Error);
@@ -179,10 +183,11 @@ namespace CommandParser
 
             if (invokeableMethod.GetParameters().Length == methodInvokeArray.Length)
             {
-                int yea = 0, nei = 0;
+                int yea = 0, nei = 0; //voting system
 
                 foreach (BaseCommandAttribute attr in baseCommandAttributes)
                 {
+                    attr.Handler = this;
                     if (await attr.BeforeCommandExecute(moduleInstance, methodInvokeArray))
                         yea++;
                     else
@@ -198,7 +203,7 @@ namespace CommandParser
                 {
                     object returnInstance = invokeableMethod.Invoke(moduleInstance, methodInvokeArray);
 
-                    await modules[moduleInstance.GetType()].OnCommandExecute(invokeableMethod, moduleInstance, methodInvokeArray, returnInstance);
+                    await _modules[moduleInstance.GetType()].OnCommandExecute(invokeableMethod, moduleInstance, methodInvokeArray, returnInstance);
 
                     foreach (BaseCommandAttribute attr in baseCommandAttributes)
                     {
@@ -213,355 +218,182 @@ namespace CommandParser
         }
 
         /// <summary>
-        /// Allows you to cast a string to a Type. Using 
-        /// </summary>
-        /// <typeparam name="T">Any type that can be handled by the <see cref="IConverter{T}"/> or simple conversions</typeparam>
-        /// <param name="parse">Formatted string.</param>
-        /// <param name="converted">The casted string</param>
-        /// <returns>True if the cast was successful</returns>
-        public bool CastString<T>(string parse, out T converted)
-        {
-            bool ret = ConvertString(parse, typeof(T), out object conversion, out _);
-
-            converted = (T)conversion;
-            return ret;
-        }
-
-        private bool ConvertString(string from, Type info, out object conversion, out string error)
-        {
-            if(UseConverter(info, from, out conversion))
-            {
-                error = string.Empty;
-                return true;
-            }
-
-            try
-            {
-                if (info.IsClass) //checks for default constructors with strings
-                {
-                    if (info.GetConstructor(new Type[] { typeof(string) }) == null)
-                        throw new Exceptions.InvalidConversionException(typeof(string), info);
-
-                    error = string.Empty;
-                    conversion = Activator.CreateInstance(info, from);
-                    return true;
-                }
-
-                //trys to convert string to type
-                TypeConverter con = TypeDescriptor.GetConverter(info);
-
-                error = string.Empty;
-                conversion = con.ConvertFromString(from);
-                return true;
-            }
-            catch (Exception e)
-            {
-                error = e.Message;
-
-            }
-
-            conversion = null;
-            return false;
-        }
-
-        /// <summary>
-        /// Checks if a type can be converted from string, by checking registered conversion types
-        /// </summary>
-        /// <returns></returns>
-        public bool CanConvert(Type c)
-        {
-            return helpers.Any(x => x.ConversionType == c);
-        }
-
-        /// <summary>
-        /// Checks if a type can be converted from string, by checking registered conversion types
+        /// Register a type with <see cref="CommandAttribute"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public bool CanConvert<T>()
+        /// <exception cref="Exceptions.InvalidModuleException"></exception>
+        /// <exception cref="Exceptions.CommandExistException"></exception>
+        public void RegisterModule<T>() where T : BaseCommandModule
         {
-            return CanConvert(typeof(T));
+            RegisterModule(typeof(T));
         }
 
         /// <summary>
-        /// Uses a converter in the registration
+        /// Register a type with <see cref="CommandAttribute"/>, must inherit <seealso cref="BaseCommandModule"/>
         /// </summary>
-        public bool UseConverter(Type type, string parse, out object converted)
+        /// <param name="reg"></param>
+        /// <exception cref="Exceptions.InvalidModuleException"></exception>
+        /// <exception cref="Exceptions.CommandExistException"></exception>
+        public void RegisterModule(Type reg)
         {
-            if (!CanConvert(type))
+            if (!reg.Inherits(typeof(BaseCommandModule)))
+                throw new Exceptions.InvalidModuleException(reg, $"does not inherit '{typeof(BaseCommandModule).Name}.");
+            else if (reg.GetConstructor(Array.Empty<Type>()) == null || reg.IsAbstract)
+                throw new Exceptions.InvalidModuleException(reg, "does not have an empty constructor, or an instance of it can not be made.");
+
+            MethodInfo[] typeMethods = reg.GetMethods((BindingFlags)(-1)); //get all methods of all kinds
+
+            //create an instance for invoking later on down the line
+            object i = Activator.CreateInstance(reg);
+
+            foreach (MethodInfo commandMethod in typeMethods)
             {
-                Options.ToLog($"Cannot convert {type.FullName}.", LogLevel.Error);
+                CommandAttribute cmd = commandMethod.GetCustomAttribute<CommandAttribute>();
+                IgnoreAttribute ig = commandMethod.GetCustomAttribute<IgnoreAttribute>(); //check if we should ignore adding in this command
 
-                converted = default;
-                return false;
-            }
-
-            converted = helpers.FirstOrDefault(x => x.ConversionType == type).Convert(parse);
-            return true;
-        }
-
-        /// <summary>
-        /// Uses a converter in the registration
-        /// </summary>
-        public bool UseConverter<T>(string parse, out T converted)
-        {
-            bool ret = UseConverter(typeof(T), parse, out object con);
-
-            converted = default;
-
-            if (ret)
-                converted = (T)con;
-
-            return ret;
-        }
-
-
-
-    //registration and such below//
-
-
-
-
-
-
-
-
-
-
-
-
-    /// <summary>
-    /// Register a type with <see cref="CommandAttribute"/>
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <exception cref="Exceptions.InvalidModuleException"></exception>
-    /// <exception cref="Exceptions.CommandExistException"></exception>
-    public void RegisterModule<T>() where T : BaseCommandModule
-    {
-        RegisterModule(typeof(T));
-    }
-
-    /// <summary>
-    /// Register a type with <see cref="CommandAttribute"/>, must inherit <seealso cref="BaseCommandModule"/>
-    /// </summary>
-    /// <param name="reg"></param>
-    /// <exception cref="Exceptions.InvalidModuleException"></exception>
-    /// <exception cref="Exceptions.CommandExistException"></exception>
-    public void RegisterModule(Type reg)
-    {
-        if (!reg.Inherits(typeof(BaseCommandModule)))
-            throw new Exceptions.InvalidModuleException(reg, $"does not inherit '{typeof(BaseCommandModule).Name}.");
-        else if (reg.GetConstructor(Array.Empty<Type>()) == null || reg.IsAbstract)
-            throw new Exceptions.InvalidModuleException(reg, "does not have an empty constructor, or an instance of it can not be made.");
-
-        MethodInfo[] typeMethods = reg.GetMethods((BindingFlags)(-1)); //get all methods of all kinds
-
-        //create an instance for invoking later on down the line
-        object i = Activator.CreateInstance(reg);
-
-        foreach (MethodInfo commandMethod in typeMethods)
-        {
-            CommandAttribute cmd = commandMethod.GetCustomAttribute<CommandAttribute>();
-            IgnoreAttribute ig = commandMethod.GetCustomAttribute<IgnoreAttribute>(); //check if we should ignore adding in this command
-
-            if (cmd is not null && ig is null)
-            {
-                AddCommand(cmd, i, commandMethod);
-            }
-        }
-
-        modules.Add(reg, (BaseCommandModule)i);
-    }
-
-
-    /// <summary>
-    /// Register a generic converter that can convert a string type into your T type.
-    /// </summary>
-    /// <typeparam name="T">Conversion choice</typeparam>
-    /// <param name="converter">Provided handler</param>
-    public void RegisterConverter<T>(IConverter<T> converter)
-    {
-        if (CanConvert<T>())
-        {
-            Options.ToLog($"Handler for {typeof(T).FullName} already exist.", LogLevel.Error);
-            return;
-        }
-
-        helpers.Add(ConverterHelper.Create(converter));
-    }
-
-    /// <summary>
-    /// Register a lambda converter
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="converter"></param>
-    public void RegisterConverter<T>(Func<string, T> converter)
-    {
-
-        ConverterHelper helper = ConverterHelper.Create(converter);
-
-        if (CanConvert<T>())
-        {
-            Options.ToLog($"Handler for {typeof(T).FullName} already exist.", LogLevel.Error);
-            return;
-        }
-
-        helpers.Add(helper);
-    }
-
-    /// <summary>
-    /// Gets rid of a converter of a specific type
-    /// </summary>
-    /// <param name="converter"></param>
-
-    public void UnRegisterConverter(Type converter)
-    {
-        if (!CanConvert(converter))
-        {
-            Options.ToLog($"Handler does not exist for {converter.FullName}.", LogLevel.Warning);
-            return;
-        }
-
-        helpers.Remove(helpers.FirstOrDefault(x => x.ConversionType == converter));
-    }
-
-    /// <summary>
-    /// Gets rid of a converter of specific type
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public void UnRegisterConverter<T>() => UnRegisterConverter(typeof(T));
-
-    /// <summary>
-    /// Fully unregisters a module
-    /// </summary>
-    /// <param name="unreg"></param>
-    public void UnRegisterModule(Type unreg)
-    {
-        if (!unreg.Inherits(typeof(BaseCommandModule)))
-            return;
-        else if (!modules.ContainsKey(unreg))
-            return;
-
-        foreach (MethodInfo method in unreg.GetMethods((BindingFlags)(-1)))
-        {
-            CommandAttribute cmdAttr = method.GetCustomAttribute<CommandAttribute>();
-
-            if (cmdAttr == null)
-                continue;
-            else if (method.GetCustomAttribute<IgnoreAttribute>() != null)
-                continue;
-
-            CommandInfo inf = new CommandInfo(cmdAttr.CommandName, method.GetParameters().Length);
-
-            foreach (KeyValuePair<CommandInfo, CommandAttribute> item in _commands)
-            {
-                if (item.Key == inf)
+                if (cmd is not null && ig is null)
                 {
-                    inf = item.Key;
-                    break;
+                    AddCommand(cmd, i, commandMethod);
                 }
             }
 
-            _commands.Remove(inf);
-            _instances.Remove(inf);
-            _methods.Remove(inf);
-
-            modules.Remove(unreg);
+            _modules.Add(reg, (BaseCommandModule)i);
         }
-    }
-
-    /// <summary>
-    /// Fully unregisters a module
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public void UnRegisterModule<T>() => UnRegisterModule(typeof(T));
 
 
-    private void AddCommand(CommandAttribute cmd, object instance, MethodInfo info)
-    {
-        if (cmd.UsingMethodName)
-            cmd.CommandName = info.Name;
 
-        CommandInfo commandInfo = new(cmd.CommandName, info.GetParameters().Length);
 
-        //both _commands and _instances contain the same keys
-        foreach (var command in Commands)
+        /// <summary>
+        /// Fully unregisters a module
+        /// </summary>
+        /// <param name="unreg"></param>
+        public void UnRegisterModule(Type unreg)
         {
-            if (command.Key == commandInfo)
-                throw new Exceptions.CommandExistException(commandInfo.Name);
+            if (!unreg.Inherits(typeof(BaseCommandModule)))
+                return;
+            else if (!_modules.ContainsKey(unreg))
+                return;
+
+            foreach (MethodInfo method in unreg.GetMethods((BindingFlags)(-1)))
+            {
+                CommandAttribute cmdAttr = method.GetCustomAttribute<CommandAttribute>();
+
+                if (cmdAttr == null)
+                    continue;
+                else if (method.GetCustomAttribute<IgnoreAttribute>() != null)
+                    continue;
+
+                CommandInfo inf = new CommandInfo(cmdAttr.CommandName, method.GetParameters().Length);
+
+                foreach (KeyValuePair<CommandInfo, CommandAttribute> item in _commands)
+                {
+                    if (item.Key == inf)
+                    {
+                        inf = item.Key;
+                        break;
+                    }
+                }
+
+                _commands.Remove(inf);
+                _instances.Remove(inf);
+                _methods.Remove(inf);
+
+                _modules.Remove(unreg);
+            }
         }
 
-        _commands.Add(commandInfo, cmd);
-        _instances.Add(commandInfo, instance);
-        _methods.Add(commandInfo, info);
+        /// <summary>
+        /// Fully unregisters a module
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void UnRegisterModule<T>() => UnRegisterModule(typeof(T));
+
+
+        private void AddCommand(CommandAttribute cmd, object instance, MethodInfo info)
+        {
+            if (cmd.UsingMethodName)
+                cmd.CommandName = info.Name;
+
+            CommandInfo commandInfo = new(cmd.CommandName, info.GetParameters().Length);
+
+            //both _commands and _instances contain the same keys
+            foreach (var command in Commands)
+            {
+                if (command.Key == commandInfo)
+                    throw new Exceptions.CommandExistException(commandInfo.Name);
+            }
+
+            _commands.Add(commandInfo, cmd);
+            _instances.Add(commandInfo, instance);
+            _methods.Add(commandInfo, info);
+        }
+
+        //registration and such above//
+
     }
 
-    //registration and such above//
-
-}
-
-/// <summary>
-/// Specific info about a command, for allowing more commands
-/// </summary>
-public struct CommandInfo
-{
     /// <summary>
-    /// Name provided 
+    /// Specific info about a command, for allowing more commands
     /// </summary>
-    public string Name { get; internal set; }
-    /// <summary>
-    /// Amount of arguments to invoke the method info
-    /// </summary>
-    public int ParameterCount { get; internal set; }
-
-    internal CommandInfo(string name, int count)
+    public struct CommandInfo
     {
-        ParameterCount = count;
-        Name = name;
+        /// <summary>
+        /// Name provided 
+        /// </summary>
+        public string Name { get; internal set; }
+        /// <summary>
+        /// Amount of arguments to invoke the method info
+        /// </summary>
+        public int ParameterCount { get; internal set; }
+
+        internal CommandInfo(string name, int count)
+        {
+            ParameterCount = count;
+            Name = name;
+        }
+
+        /// <summary>
+        /// Checks if the left and right have the same name and parameter count.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        public static bool operator ==(CommandInfo left, CommandInfo right)
+        {
+            if (string.IsNullOrEmpty(left.Name) || string.IsNullOrEmpty(right.Name))
+                return false;
+
+            return left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) && left.ParameterCount == right.ParameterCount;
+        }
+
+        /// <summary>
+        /// Checks if the left and right do not have the same name and parameter count.
+        /// </summary>
+        /// <param name="left"></param>
+        /// <param name="right"></param>
+        public static bool operator !=(CommandInfo left, CommandInfo right)
+        {
+            return !(left == right);
+        }
+
+        /// <summary>
+        /// </summary>
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            if (obj.GetType() != typeof(CommandInfo))
+                return false;
+
+            return this == (CommandInfo)obj;
+        }
+
     }
-
-    /// <summary>
-    /// Checks if the left and right have the same name and parameter count.
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    public static bool operator ==(CommandInfo left, CommandInfo right)
-    {
-        if (string.IsNullOrEmpty(left.Name) || string.IsNullOrEmpty(right.Name))
-            return false;
-
-        return left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) && left.ParameterCount == right.ParameterCount;
-    }
-
-    /// <summary>
-    /// Checks if the left and right do not have the same name and parameter count.
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    public static bool operator !=(CommandInfo left, CommandInfo right)
-    {
-        return !(left == right);
-    }
-
-    /// <summary>
-    /// </summary>
-    public override int GetHashCode()
-    {
-        return base.GetHashCode();
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public override bool Equals(object obj)
-    {
-        if (obj.GetType() != typeof(CommandInfo))
-            return false;
-
-        return this == (CommandInfo)obj;
-    }
-
-}
 }

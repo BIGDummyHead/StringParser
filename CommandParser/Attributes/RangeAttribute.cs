@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -9,12 +8,14 @@ namespace CommandParser;
 /// Allows you to set a range of minimum and maximum arguments that can be passed into the last parameter.
 /// </summary>
 /// <remarks>Can only be applied to the last parameter</remarks>
-public sealed class RangeAttribute : CommandParameterAttribute
+public class RangeAttribute : CommandParameterAttribute
 {
     /// <summary>
     /// Number range
     /// </summary>
     public readonly int min, max;
+
+    const int m_min = 0;
 
     /// <summary>
     /// 
@@ -29,8 +30,8 @@ public sealed class RangeAttribute : CommandParameterAttribute
             throw new Exception("Min cannot be higher than max.");
 
         //check if min is lower than 1
-        else if (min < 1 || max < 1)
-            throw new Exception("Max/Min cannot be lower than 1.");
+        else if (min < m_min || max < m_min)
+            throw new Exception($"Max/Min cannot be lower than {m_min}.");
 
         this.min = min;
         this.max = max;
@@ -45,19 +46,38 @@ public sealed class RangeAttribute : CommandParameterAttribute
 
     }
 
+    /// <summary>
+    /// Sets the min to 0 and max to <see cref="int.MaxValue"/>
+    /// </summary>
+    public RangeAttribute() : this(0, int.MaxValue)
+    {
+
+    }
+
 
 #pragma warning disable
     public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
     {
         //check if the last parameter is the one we are looking for
         if (parameters[^1] != pInfo)
+        {
+            Handler.Options.ToLog("Must use on the last parameter", LogLevel.Warning);
             return args;
+        }
 
         string[] collectedArgs = args[(parameters.Length - 1)..];
         //check if the amount of arguments is lower than the min
-        if (collectedArgs.Length < min || collectedArgs.Length > max)
+
+        if (args.Length < parameters.Length)
         {
-            Handler.Options.ToLog("Cannot invoke because the arguments may be lower than the minimum or greater than maximum.", LogLevel.Information);
+            string[] empCopy = new string[args.Length + 1];
+            Array.Copy(args, empCopy, args.Length);
+            empCopy[^1] = "";
+            return empCopy;
+        }
+        else if (collectedArgs.Length < min || collectedArgs.Length > max)
+        {
+            Handler.Options.ToLog("Invoke may not be possible because the arguments may be lower than the minimum or greater than maximum.", LogLevel.Information);
             return Array.Empty<string>(); //we want to do this because it is invalid so we want to just skip.
         }
 

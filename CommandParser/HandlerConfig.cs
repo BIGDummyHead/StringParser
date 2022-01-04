@@ -1,6 +1,5 @@
 ﻿using CommandParser.Interfaces;
 using System;
-using System.Collections.Generic;
 
 namespace CommandParser
 {
@@ -52,29 +51,39 @@ namespace CommandParser
         public ILog Logger { get; set; } = new Logger();
 
         /// <summary>
+        /// Char that splits the commands!
+        /// </summary>
+        public char Separator { get; set; } = ' ';
+
+        /// <summary>
+        /// Uses the <see cref="string.Trim()"/> when invoking <seealso cref="CommandHandler.Invoke(string)"/>
+        /// </summary>
+        public bool AlwaysTrim { get; set; } = true;
+
+        /// <summary>
         /// Sends a message to all Loggers in the HandlerConfig
         /// </summary>
         /// <param name="msg">The message to send</param>
         /// <param name="level">The type of log</param>
         internal void ToLog(string msg, LogLevel level)
         {
-                Logger.Log(msg, level);
+            Logger.Log(msg, level);
 
-                switch (level)
-                {
-                    case LogLevel.Debug:
-                        Logger.LogDebug(msg);
-                        break;
-                    case LogLevel.Information:
-                        Logger.LogInfo(msg);
-                        break;
-                    case LogLevel.Warning:
-                        Logger.LogWarning(msg);
-                        break;
-                    case LogLevel.Error:
-                        Logger.LogError(msg);
-                        break;
-                }
+            switch (level)
+            {
+                case LogLevel.Debug:
+                    Logger.LogDebug(msg);
+                    break;
+                case LogLevel.Information:
+                    Logger.LogInfo(msg);
+                    break;
+                case LogLevel.Warning:
+                    Logger.LogWarning(msg);
+                    break;
+                case LogLevel.Error:
+                    Logger.LogError(msg);
+                    break;
+            }
         }
 
         /// <summary>
@@ -100,6 +109,8 @@ namespace CommandParser
             Prefix = config.Prefix;
             ByPopularVote = config.ByPopularVote;
             IgnoreCase = config.IgnoreCase;
+            Separator = config.Separator;
+            AlwaysTrim = config.AlwaysTrim;
         }
 
     }
