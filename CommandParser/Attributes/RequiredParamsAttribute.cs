@@ -38,7 +38,7 @@ namespace CommandParser
 
             args[index] = joined;
 
-            return args.Where(x => x != null).ToArray() ;
+            return args.Where(x => x != null).ToArray();
         }
 #pragma warning restore
     }
