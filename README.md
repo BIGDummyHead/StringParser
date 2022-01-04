@@ -110,13 +110,16 @@ class BasicCommands : BaseCommandModule
     [Command("say")]
     public void SayLong(string name, [RequiredParams(2)] string twoThing, [RequiredParams(3)] string threeThing) { } //therefore this command will take 6 total arguments.
 
-    //Up To
+    //Range
 
-    //This attribute may only be used on the last parameter, it allows you to provide extra but not necessary arguments.
+    //This attribute may only be used on the last parameter, it allows you to provide extra but not necessary arguments and is like the required attribute.
 
     [Command("other")]
-    public void Other(string a, [UpTo(3)]string b) {}
-    //this command will take 2-4 arguments.
+    public void Other(string a, [Range(1, 3)]string b) {} //note: this is the same as doing [Range(3)] as min is set to '1'
+    //this command will take 2, 3, or 4 arguments.
+    
+    [Command("other")]
+    public void Other([Range(3, 5)] string other){} //this command will take 3, 4, or 5 arguments
 
 }
 
