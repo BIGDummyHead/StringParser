@@ -121,6 +121,14 @@ class BasicCommands : BaseCommandModule
     [Command("other")]
     public void Other([Range(3, 5)] string other){} //this command will take 3, 4, or 5 arguments
 
+    //Optional
+
+    //This attribute may only be used on the last parameter, it allows you to make a parameter optional
+
+    [Command("comp")]
+    public void Comp(string a, [Optional]string b){}
+    //this command will take 1 or 2 arguments. This is essentialy the same as saying [Range(0, 1)]
+
 }
 
 ```
