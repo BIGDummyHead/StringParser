@@ -156,7 +156,7 @@ class CustomAttribute : BaseCommandAttribute //all attributes that inherit this 
 
 ```
 
-#### We can also use the AdvancedCommandAttribute, this allows us to modify and edit the argument array provided to the Handler.
+#### We can also use the CommandParameterAttribute, this allows us to modify and edit the argument array provided to the Handler.
 
 ```csharp
 
@@ -169,3 +169,73 @@ class CommandAttribute : CommandParameterAttribute
 }
 
 ```
+
+# Creating Custom Converters
+
+#### Creating custom converters allows you to put in special types in your commands. 
+#### This allows you to stop converting a string into a certain type over and over again. But instead making a reusable converter that is later passed down as an object.
+
+```csharp
+
+using CommandParser;
+using CommandParser.Interfaces;
+
+class Person
+{
+    public string name;
+    public int age;
+}
+
+class PersonConverter : IConverter<Person>
+{
+    public Person Convert(string parse)
+    {
+        string[] args = parse.Split(' ');
+
+        if(args.Length != 2)
+            return null;
+
+        if (int.TryParse(args[1], out int age))
+        {
+            Person person = new Person();
+
+            person.name = args[0];
+            person.age = int.Parse(args[1]);
+
+            return person;
+        }
+
+        return null;
+    }
+}
+
+CommandHandler handler = new CommandHandler();
+handler.RegisterConverter(new PersonConverter());
+
+//to rid of this converter
+handler.UnRegisterConverter<Person>(); //
+
+//we can also register a converter with a Func<string, T> as so
+
+handler.RegisterConverter(delegate(string parse)
+{
+    string[] args = parse.Split(' ');
+
+    if(args.Length != 2)
+        return null;
+
+    if(int.TryParse(args[1], out int age))
+    {
+        Person person = new Person();
+        
+        person.name = args[0];
+        person.age = age;
+
+        return person;
+    }
+
+    return null;
+});
+
+```
+
