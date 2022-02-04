@@ -106,5 +106,10 @@ namespace CommandParser
 
             return joined.Trim();
         }
+
+        internal static int Stop(this int a, int min)
+        {
+            return a < min ? min : a;
+        }
     }
 }

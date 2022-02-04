@@ -156,17 +156,24 @@ public sealed class CommandHandler
 
             ParameterInfo[] methodParameters = method.GetParameters();
 
-            for (int i = 0; i < methodParameters.Length; i++)
+            ParameterInfo[] skip = methodParameters[(pre.Length - 1).Stop(0)..(methodParameters.Length - pre.Length - aft.Length)];
+
+
+            for (int i = 0; i < skip.Length; i++)
             {
-                ParameterInfo loopX = methodParameters[i];
+                ParameterInfo loopX = skip[i];
 
                 foreach (CommandParameterAttribute pinvokes in loopX.GetCustomAttributes<CommandParameterAttribute>().OrderByDescending(x => x.importance))
                 {
                     pinvokes.Handler = this;
+
+
                     //we should call this method in here because it can effect the total outcome of the command invokemennt
-                    stringArguments = await pinvokes.OnCollect(loopX, stringArguments, methodParameters);
+                    stringArguments = await pinvokes.OnCollect(loopX, stringArguments, skip);
                 }
             }
+
+            argLen = pre.Length + stringArguments.Length + aft.Length;
 
             if (argLen < methodParameters.Length)
             {
