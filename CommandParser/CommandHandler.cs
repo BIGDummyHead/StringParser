@@ -10,10 +10,10 @@ namespace CommandParser;
 /// </summary>
 public sealed class CommandHandler
 {
-    internal readonly Dictionary<CommandInfo, CommandAttribute> _commands = new Dictionary<CommandInfo, CommandAttribute>();
-    internal readonly Dictionary<CommandInfo, object> _instances = new Dictionary<CommandInfo, object>();
-    internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new Dictionary<CommandInfo, MethodInfo>();
-    internal readonly Dictionary<Type, BaseCommandModule> _modules = new Dictionary<Type, BaseCommandModule>();
+    internal readonly Dictionary<CommandInfo, CommandAttribute> _commands = new();
+    internal readonly Dictionary<CommandInfo, object> _instances = new ();
+    internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new ();
+    internal readonly Dictionary<Type, BaseCommandModule> _modules = new ();
 
 
     /// <summary>
@@ -46,17 +46,18 @@ public sealed class CommandHandler
     {
         Options = config;
 
-        Converter.RegisterConverter(delegate (string parse) { return parse; }); //add in basic converters here
+        Converter.RegisterConverter(delegate (string parse) { return ValueTask.FromResult(parse); }); //add in basic converters here
 
-        Converter.RegisterConverter(delegate (string parse)
+#pragma warning disable CS1998
+        Converter.RegisterConverter(async delegate (string parse)
         {
             if (int.TryParse(parse, out int result))
-                return result;
+                return  result;
 
             return 0;
         });
 
-        Converter.RegisterConverter(delegate (string parse)
+        Converter.RegisterConverter(async delegate (string parse)
         {
             if (double.TryParse(parse, out double result))
                 return result;
@@ -64,13 +65,14 @@ public sealed class CommandHandler
             return 0;
         });
 
-        Converter.RegisterConverter(delegate (string parse)
+        Converter.RegisterConverter(async delegate (string parse)
         {
             if (float.TryParse(parse, out float result))
                 return result;
 
             return 0;
         });
+#pragma warning restore CS1998
     }
 
     /// <summary>
@@ -135,7 +137,7 @@ public sealed class CommandHandler
 
         int argLen = pre.Length + stringArguments.Length + aft.Length;
 
-        CommandInfo mockInfo = new CommandInfo(commandName, argLen);
+        CommandInfo mockInfo = new (commandName, argLen);
 
         CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Options.Comp));
 
@@ -147,7 +149,7 @@ public sealed class CommandHandler
         else
             mockInfo.Name = comparingResult.Name;
 
-        List<object> methodInvoke = new List<object>(); //this list is responsible for the method invoking
+        List<object> methodInvoke = new (); //this list is responsible for the method invoking
         MethodInfo invokeableMethod = null;
 
         foreach (KeyValuePair<CommandInfo, MethodInfo> validMethods in _methods) //never use return in here!
@@ -156,7 +158,7 @@ public sealed class CommandHandler
 
             ParameterInfo[] methodParameters = method.GetParameters();
 
-            ParameterInfo[] skip =  new ParameterInfo[(methodParameters.Length - pre.Length - aft.Length)];
+            ParameterInfo[] skip = new ParameterInfo[(methodParameters.Length - pre.Length - aft.Length)];
 
             Array.Copy(methodParameters, pre.Length, skip, 0, skip.Length);
 
@@ -191,7 +193,7 @@ public sealed class CommandHandler
             {
                 int strStart = i + pre.Length;
 
-                bool converted = Converter.CastString(stringArguments[i], methodParameters[strStart].ParameterType, out object convertedObject, out string possibleError);
+                bool converted = Converter.CastString(pre, stringArguments[i], aft, methodParameters[strStart].ParameterType, out ValueTask<object> convertedObject, out string possibleError);
                 if (!converted)
                 {
                     Options.ToLog(possibleError, LogLevel.Error);
@@ -199,7 +201,9 @@ public sealed class CommandHandler
                     continue;
                 }
                 else
-                    methodInvoke.Add(convertedObject);
+                {
+                    methodInvoke.Add(await convertedObject);
+                }
             }
 
             invokeableMethod = method;
@@ -324,7 +328,7 @@ public sealed class CommandHandler
             else if (method.GetCustomAttribute<IgnoreAttribute>() != null)
                 continue;
 
-            CommandInfo inf = new CommandInfo(cmdAttr.CommandName, method.GetParameters().Length);
+            CommandInfo inf = new (cmdAttr.CommandName, method.GetParameters().Length);
 
             foreach (KeyValuePair<CommandInfo, CommandAttribute> item in _commands)
             {

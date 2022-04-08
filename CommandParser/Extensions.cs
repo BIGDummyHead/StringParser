@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CommandParser
 {
@@ -16,7 +17,7 @@ namespace CommandParser
         /// <typeparam name="T"></typeparam>
         /// <param name="handler"></param>
         /// <param name="converter"></param>
-        public static void RegisterConverter<T>(this CommandHandler handler, Func<string, T> converter)
+        public static void RegisterConverter<T>(this CommandHandler handler, Func<string, ValueTask<T>> converter)
         {
             handler.Converter.RegisterConverter(converter);
         }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CommandParser
 {
@@ -11,7 +12,7 @@ namespace CommandParser
     /// </summary>
     public sealed class StringConverter
     {
-        internal readonly List<ConverterHelper> helpers = new List<ConverterHelper>();
+        internal readonly List<ConverterHelper> helpers = new();
 
         /// <summary>
         /// Allows you to cast a string to a Type.  
@@ -19,12 +20,14 @@ namespace CommandParser
         /// <typeparam name="T">Any type that can be handled by the <see cref="IConverter{T}"/> or simple conversions</typeparam>
         /// <param name="parse">Formatted string.</param>
         /// <param name="converted">The casted string</param>
+        /// <param name="before">Args before passed</param>
+        /// <param name="after">Args after passed</param>
         /// <returns>True if the cast was successful</returns>
-        public bool CastString<T>(string parse, out T converted)
+        public bool CastString<T>(object[] before, string parse, object[] after, out ValueTask<T> converted)
         {
-            bool ret = CastString(parse, typeof(T), out object conversion, out _);
+            bool ret = CastString(before, parse, after, typeof(T), out ValueTask<object> conversion, out _);
 
-            converted = (T)conversion;
+            converted = ValueTask.FromResult((T)conversion.Result);
             return ret;
         }
 
@@ -36,10 +39,12 @@ namespace CommandParser
         /// <param name="castType">Type to cast to</param>
         /// <param name="converted">Converted object</param>
         /// <param name="error">Any errors passed out</param>
+        /// <param name="after">Args after passed</param>
+        /// <param name="before">Args before passed</param>
         /// <returns>True if the cast was successful</returns>
-        public bool CastString(string from, Type castType, out object converted, out string error)
+        public bool CastString(object[] before, string from, object[] after, Type castType, out ValueTask<object> converted, out string error)
         {
-            if (UseConverter(castType, from, out converted))
+            if (UseConverter(castType, before, from, after, out converted))
             {
                 error = string.Empty;
                 return true;
@@ -57,7 +62,7 @@ namespace CommandParser
         /// <param name="error">Any errors passed out</param>
         /// <returns>True if the cast was successful</returns>
         /// <remarks>Does not use any <see cref="IConverter{T}"/></remarks>
-        public static bool GlobalCastString(string from, Type castType, out object converted, out string error)
+        public static bool GlobalCastString(string from, Type castType, out ValueTask<object> converted, out string error)
         {
             try
             {
@@ -67,7 +72,7 @@ namespace CommandParser
                         throw new Exceptions.InvalidConversionException(typeof(string), castType);
 
                     error = string.Empty;
-                    converted = Activator.CreateInstance(castType, from);
+                    converted = ValueTask.FromResult(Activator.CreateInstance(castType, from));
                     return true;
                 }
 
@@ -75,7 +80,7 @@ namespace CommandParser
                 TypeConverter con = TypeDescriptor.GetConverter(castType);
 
                 error = string.Empty;
-                converted = con.ConvertFromString(from);
+                converted = ValueTask.FromResult(con.ConvertFromString(from));
                 return true;
             }
             catch (Exception e)
@@ -84,7 +89,7 @@ namespace CommandParser
 
             }
 
-            converted = null;
+            converted = ValueTask.FromResult<object>(null);
             return false;
         }
 
@@ -110,7 +115,7 @@ namespace CommandParser
         /// <summary>
         /// Uses a converter in the registration
         /// </summary>
-        public bool UseConverter(Type type, string parse, out object converted)
+        public bool UseConverter(Type type, object[] before, string parse, object[] after, out ValueTask<object> converted)
         {
             if (!CanConvert(type))
             {
@@ -118,21 +123,21 @@ namespace CommandParser
                 return false;
             }
 
-            converted = helpers.FirstOrDefault(x => x.ConversionType == type).Convert(parse);
+            converted = helpers.FirstOrDefault(x => x.ConversionType == type).Convert(before, parse, after);
             return true;
         }
 
         /// <summary>
         /// Uses a converter in the registration
         /// </summary>
-        public bool UseConverter<T>(string parse, out T converted)
+        public bool UseConverter<T>(object[] before, string parse, object[] after, out ValueTask<T> converted)
         {
-            bool ret = UseConverter(typeof(T), parse, out object con);
+            bool ret = UseConverter(typeof(T), before, parse, after, out ValueTask<object> con);
 
             converted = default;
 
             if (ret)
-                converted = (T)con;
+                converted = ValueTask.FromResult((T)con.Result);
 
             return ret;
         }
@@ -155,7 +160,7 @@ namespace CommandParser
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="converter"></param>
-        public void RegisterConverter<T>(Func<string, T> converter)
+        public void RegisterConverter<T>(Func<string, ValueTask<T>> converter)
         {
 
             ConverterHelper helper = ConverterHelper.Create(converter);
