@@ -188,25 +188,26 @@ class Person
 
 class PersonConverter : IConverter<Person>
 {
-    public Person Convert(string parse)
-    {
-        string[] args = parse.Split(' ');
 
-        if(args.Length != 2)
-            return null;
+	public async ValueTask<Person> Convert(object[] previousArgs, string parse, object[] afterArgs)
+	{
+    		string[] args = parse.Split(' ');
 
-        if (int.TryParse(args[1], out int age))
-        {
-            Person person = new Person();
+        	if(args.Length != 2)
+            	return null;
 
-            person.name = args[0];
-            person.age = int.Parse(args[1]);
+        	if (int.TryParse(args[1], out int age))
+        	{
+            		Person person = new Person();
 
-            return person;
-        }
+            		person.age = int.Parse(args[1]);
 
-        return null;
-    }
+            		return person;
+        	}
+
+        	return null;
+	}
+
 }
 
 CommandHandler handler = new CommandHandler();
@@ -217,7 +218,7 @@ handler.UnRegisterConverter<Person>(); //
 
 //we can also register a converter with a Func<string, T> as so
 
-handler.RegisterConverter(delegate(string parse)
+handler.RegisterConverter(async delegate(object[] previousArgs, string parse, object[] afterArgs)
 {
     string[] args = parse.Split(' ');
 
