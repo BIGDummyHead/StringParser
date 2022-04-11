@@ -61,7 +61,8 @@ public class RangeAttribute : CommandParameterAttribute
         //check if the last parameter is the one we are looking for
         if (parameters[^1] != pInfo)
         {
-            Handler.Options.ToLog("Must use on the last parameter", LogLevel.Warning);
+            //Invalid use on {pInfo.Name}. {typeof(Range).Name} must be used on the last parameter ({pparameters[^1].Name}
+            Handler.Config.ToLog($"Invalid use on {pInfo.Name}. {typeof(Range).Name} attribute must be used on the last parameter ({parameters[^1].Name})", LogLevel.Warning);
             return args;
         }
 
@@ -77,7 +78,9 @@ public class RangeAttribute : CommandParameterAttribute
         }
         else if (collectedArgs.Length < min || collectedArgs.Length > max)
         {
-            Handler.Options.ToLog("Invoke may not be possible because the arguments may be lower than the minimum or greater than maximum.", LogLevel.Information);
+            string _base = $"Invocation may not be possible because the arguments are ";
+            string _add = collectedArgs.Length < min ? $"lower than {min}" : $"greater than {max}";
+            Handler.Config.ToLog(_base + _add, LogLevel.Information);
             return Array.Empty<string>(); //we want to do this because it is invalid so we want to just skip.
         }
 

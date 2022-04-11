@@ -31,7 +31,7 @@ public sealed class CommandHandler
     /// <summary>
     /// Options for your Handler
     /// </summary>
-    public HandlerConfig Options { get; init; }
+    public HandlerConfig Config { get; init; }
 
     /// <summary>
     /// Used converter
@@ -44,7 +44,7 @@ public sealed class CommandHandler
     /// <param name="config"></param>
     public CommandHandler(HandlerConfig config)
     {
-        Options = config;
+        Config = config;
 
         Converter.RegisterConverter(delegate (string parse) { return ValueTask.FromResult(parse); }); //add in basic converters here
 
@@ -116,38 +116,40 @@ public sealed class CommandHandler
     /// <exception cref="Exceptions.InvalidConversionException"></exception>
     public async Task Invoke(object[] pre, string invoker, object[] aft)
     {
-        if (Options.AlwaysTrim)
+        if (Config.AlwaysTrim)
             invoker = invoker.Trim();
 
-        string[] words = invoker.Split(Options.Separator);
+        string[] words = invoker.Split(Config.Separator);
 
         if (words.Length < 1)
         {
-            Options.ToLog("Not enough arguments sent", LogLevel.Information);
+            Config.ToLog("0 arguments invalid", LogLevel.Information);
             return;
         }
-        else if (!words[0].StartsWith(Options.Prefix))
+        else if (!words[0].StartsWith(Config.Prefix))
         {
-            Options.ToLog("Prefix invalid", LogLevel.Information);
+            Config.ToLog("Prefix invalid", LogLevel.Information);
             return;
         }
 
-        string commandName = Options.HasPrefix ? words[0][1..] : words[0];
+        string commandName = Config.HasPrefix ? words[0][1..] : words[0];
+
         string[] stringArguments = words[1..];
 
         int argLen = pre.Length + stringArguments.Length + aft.Length;
 
         CommandInfo mockInfo = new (commandName, argLen);
 
-        CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Options.Comp));
+        CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Config.Comp));
 
         if (comparingResult == default)
         {
-            Options.ToLog($"'{commandName}' is not registered", LogLevel.Warning);
+            Config.ToLog($"'{commandName}' is not registered.", LogLevel.Warning);
             return;
         }
         else
             mockInfo.Name = comparingResult.Name;
+
 
         List<object> methodInvoke = new (); //this list is responsible for the method invoking
         MethodInfo invokeableMethod = null;
@@ -180,12 +182,12 @@ public sealed class CommandHandler
 
             if (argLen < methodParameters.Length)
             {
-                Options.ToLog("Arguments do not match length", LogLevel.Warning);
+                Config.ToLog("Argument length does not match Command length.", LogLevel.Warning);
                 continue;
             }
             else if (argLen != methodParameters.Length) //catches a possible exception
             {
-                Options.ToLog("Argument length does not match the Parameter Info Length!", LogLevel.Error);
+                Config.ToLog($"After collection, Arguments length did not match the final {typeof(MethodInfo).Name} parameter length.", LogLevel.Error);
                 return;
             }
 
@@ -196,7 +198,7 @@ public sealed class CommandHandler
                 bool converted = Converter.CastString(pre, stringArguments[i], aft, methodParameters[strStart].ParameterType, out ValueTask<object> convertedObject, out string possibleError);
                 if (!converted)
                 {
-                    Options.ToLog(possibleError, LogLevel.Error);
+                    Config.ToLog(possibleError, LogLevel.Error);
                     methodInvoke.Clear(); //clear invoke list
                     continue;
                 }
@@ -206,13 +208,17 @@ public sealed class CommandHandler
                 }
             }
 
+            if (!method.GetCustomAttribute<CommandAttribute>().CommandName.Equals(mockInfo.Name, Config.Comp))
+                continue;
+
             invokeableMethod = method;
             mockInfo = new CommandInfo(mockInfo.Name, argLen);
         }
 
         if (invokeableMethod == null)
         {
-            Options.ToLog("Could not find any commands to invoke", LogLevel.Warning);
+            
+            Config.ToLog("Could not find any invokeable command. That matched Argument Length / Supplied Arguments.", LogLevel.Warning);
             return;
         }
 
@@ -233,7 +239,7 @@ public sealed class CommandHandler
                     nei++;
             }
 
-            bool cont = Options.ByPopularVote && yea > nei;
+            bool cont = Config.ByPopularVote && yea > nei;
 
             if (!cont)
                 cont = nei > 0;
@@ -254,11 +260,12 @@ public sealed class CommandHandler
                 {
                     await attr.AfterCommandExecute(moduleInstance, methodInvokeArray, returnInstance);
                 }
+
             }
         }
         else
         {
-            Options.ToLog("Parameter length did not match the Invoking array that would have been supplied.", LogLevel.Error);
+            Config.ToLog("Parameter length did not match the Invoking array that would have been supplied.", LogLevel.Error);
         }
     }
 
