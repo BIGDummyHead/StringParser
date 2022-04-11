@@ -48,7 +48,7 @@ namespace CommandParser
         /// <summary>
         /// The logger used for the config and the <see cref="CommandHandler"/>
         /// </summary>
-        public ILog Logger { get; set; }
+        public ILog Logger { get; set; } = new Logger();
 
         /// <summary>
         /// Char that splits the commands!
