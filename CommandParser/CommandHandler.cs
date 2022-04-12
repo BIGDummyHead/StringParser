@@ -11,9 +11,9 @@ namespace CommandParser;
 public sealed class CommandHandler
 {
     internal readonly Dictionary<CommandInfo, CommandAttribute> _commands = new();
-    internal readonly Dictionary<CommandInfo, object> _instances = new ();
-    internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new ();
-    internal readonly Dictionary<Type, BaseCommandModule> _modules = new ();
+    internal readonly Dictionary<CommandInfo, object> _instances = new();
+    internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new();
+    internal readonly Dictionary<Type, BaseCommandModule> _modules = new();
 
 
     /// <summary>
@@ -52,7 +52,7 @@ public sealed class CommandHandler
         Converter.RegisterConverter(async delegate (string parse)
         {
             if (int.TryParse(parse, out int result))
-                return  result;
+                return result;
 
             return 0;
         });
@@ -138,7 +138,7 @@ public sealed class CommandHandler
 
         int argLen = pre.Length + stringArguments.Length + aft.Length;
 
-        CommandInfo mockInfo = new (commandName, argLen);
+        CommandInfo mockInfo = new(commandName, argLen);
 
         CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Config.Comp));
 
@@ -151,12 +151,14 @@ public sealed class CommandHandler
             mockInfo.Name = comparingResult.Name;
 
 
-        List<object> methodInvoke = new (); //this list is responsible for the method invoking
+        List<object> methodInvoke = new(); //this list is responsible for the method invoking
         MethodInfo invokeableMethod = null;
 
-        foreach (KeyValuePair<CommandInfo, MethodInfo> validMethods in _methods) //never use return in here!
+        foreach (KeyValuePair<CommandInfo, MethodInfo> validMethods in _methods
+            .Where(x => x.Value.GetCustomAttribute<CommandAttribute>().CommandName.Equals(mockInfo.Name, Config.Comp))) //never use return in here!
         {
             MethodInfo method = validMethods.Value;
+
 
             ParameterInfo[] methodParameters = method.GetParameters();
 
@@ -172,13 +174,13 @@ public sealed class CommandHandler
                 foreach (CommandParameterAttribute pinvokes in loopX.GetCustomAttributes<CommandParameterAttribute>().OrderByDescending(x => x.importance))
                 {
                     pinvokes.Handler = this;
-
                     //we should call this method in here because it can effect the total outcome of the command invokemennt
-                    stringArguments = await pinvokes.OnCollect(loopX, stringArguments, skip);
+                    stringArguments = await pinvokes.OnCollect(loopX, pre, stringArguments, aft, skip);
                 }
             }
 
             argLen = pre.Length + stringArguments.Length + aft.Length;
+
 
             if (argLen < methodParameters.Length)
             {
@@ -187,8 +189,8 @@ public sealed class CommandHandler
             }
             else if (argLen != methodParameters.Length) //catches a possible exception
             {
-                Config.ToLog($"After collection, Arguments length did not match the final {typeof(MethodInfo).Name} parameter length.", LogLevel.Error);
-                return;
+                Config.ToLog($"After collection, Arguments length did not match the final {typeof(MethodInfo).Name} parameter length.", LogLevel.Warning);
+                continue; //great example of why not to return
             }
 
             for (int i = 0; i < stringArguments.Length; i++)
@@ -208,16 +210,13 @@ public sealed class CommandHandler
                 }
             }
 
-            if (!method.GetCustomAttribute<CommandAttribute>().CommandName.Equals(mockInfo.Name, Config.Comp))
-                continue;
-
             invokeableMethod = method;
             mockInfo = new CommandInfo(mockInfo.Name, argLen);
         }
 
         if (invokeableMethod == null)
         {
-            
+
             Config.ToLog("Could not find any invokeable command. That matched Argument Length / Supplied Arguments.", LogLevel.Warning);
             return;
         }
@@ -335,7 +334,7 @@ public sealed class CommandHandler
             else if (method.GetCustomAttribute<IgnoreAttribute>() != null)
                 continue;
 
-            CommandInfo inf = new (cmdAttr.CommandName, method.GetParameters().Length);
+            CommandInfo inf = new(cmdAttr.CommandName, method.GetParameters().Length);
 
             foreach (KeyValuePair<CommandInfo, CommandAttribute> item in _commands)
             {

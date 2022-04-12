@@ -27,7 +27,7 @@ namespace CommandParser
         }
 
 #pragma warning disable
-        public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
+        public override async Task<string[]> OnCollect(ParameterInfo pInfo, object[] bef, string[] args, object[] aft, ParameterInfo[] parameters)
         {
             int index = parameters.IndexOf(pInfo);
 

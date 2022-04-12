@@ -32,10 +32,12 @@ namespace CommandParser
         /// <summary>
         /// When this attribute is collected in the <see cref="CommandHandler"/>
         /// </summary>
-        /// <param name="pInfo">Parameters passed into the Command</param>
+        /// <param name="applied">Parameters passed into the Command</param>
         /// <param name="args">Arguments</param>
-        /// <param name="parameters">Parameters of the method</param>
-        public virtual async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
+        /// <param name="methodParameters">Parameters of the method</param>
+        /// <param name="preArgs">Parameters supplied before string</param>
+        /// <param name="aftArgs">Paramaters supplied after string</param>
+        public virtual async Task<string[]> OnCollect(ParameterInfo applied, object[] preArgs, string[] args, object[] aftArgs, ParameterInfo[] methodParameters)
         {
             return args;
         }

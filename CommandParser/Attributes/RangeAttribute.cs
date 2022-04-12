@@ -56,7 +56,7 @@ public class RangeAttribute : CommandParameterAttribute
 
 
 #pragma warning disable
-    public override async Task<string[]> OnCollect(ParameterInfo pInfo, string[] args, ParameterInfo[] parameters)
+    public override async Task<string[]> OnCollect(ParameterInfo pInfo, object[] bef, string[] args, object[] aft, ParameterInfo[] parameters)
     {
         //check if the last parameter is the one we are looking for
         if (parameters[^1] != pInfo)

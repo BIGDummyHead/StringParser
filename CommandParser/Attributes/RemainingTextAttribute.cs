@@ -11,6 +11,5 @@ public sealed class RemainingTextAttribute : RangeAttribute
     /// <param name="requiredParam">Whether or not you need to provide a parameter to invoke</param>
     public RemainingTextAttribute(bool requiredParam = true) : base(requiredParam ? 1 : 0, int.MaxValue)
     {
-
     }
 }
