@@ -227,6 +227,12 @@ public sealed class CommandHandler
 
         if (invokeableMethod.GetParameters().Length == argLen)
         {
+            if (pre.Length > 0)
+                methodInvokeArray = pre.Concat(methodInvokeArray).ToArray();
+
+            if (aft.Length > 0)
+                methodInvokeArray = methodInvokeArray.Concat(aft).ToArray();
+
             int yea = 0, nei = 0; //voting system
 
             foreach (BaseCommandAttribute attr in baseCommandAttributes)
@@ -245,11 +251,7 @@ public sealed class CommandHandler
 
             if (cont)
             {
-                if (pre.Length > 0)
-                    methodInvokeArray = pre.Concat(methodInvokeArray).ToArray();
-
-                if (aft.Length > 0)
-                    methodInvokeArray = methodInvokeArray.Concat(aft).ToArray();
+                
 
                 object returnInstance = invokeableMethod.Invoke(moduleInstance, methodInvokeArray);
 
