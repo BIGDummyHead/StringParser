@@ -154,9 +154,18 @@ public sealed class CommandHandler
         List<object> methodInvoke = new(); //this list is responsible for the method invoking
         MethodInfo invokeableMethod = null;
 
-        foreach (KeyValuePair<CommandInfo, MethodInfo> validMethods in _methods
-            .Where(x => x.Value.GetCustomAttribute<CommandAttribute>().CommandName.Equals(mockInfo.Name, Config.Comp))) //never use return in here!
+        foreach (KeyValuePair<CommandInfo, MethodInfo> validMethods in _methods) //never use return in here!
         {
+            //.Where(x => x.Value.GetCustomAttribute<CommandAttribute>().CommandName.Equals(mockInfo.Name, Config.Comp))
+
+            CommandAttribute cmd_attr = validMethods.Value.GetCustomAttribute<CommandAttribute>();
+
+            if (string.IsNullOrEmpty(cmd_attr.CommandName))
+                cmd_attr.CommandName = validMethods.Value.Name;
+
+            if (!cmd_attr.CommandName.Equals(mockInfo.Name, Config.Comp))
+                continue;
+
             MethodInfo method = validMethods.Value;
 
 
@@ -251,6 +260,19 @@ public sealed class CommandHandler
 
             if (cont)
             {
+                if(!Config.AllowNulls)
+                {
+                    int at = 0;
+                    foreach (object ink in methodInvokeArray)
+                    {
+                        if (ink is null)
+                        {
+                            Config.ToLog($"An object was null at position {at+1} while trying to invoke.", LogLevel.Error);
+                            return;
+                        }
+                        at++;
+                    }
+                }
                 
 
                 object returnInstance = invokeableMethod.Invoke(moduleInstance, methodInvokeArray);

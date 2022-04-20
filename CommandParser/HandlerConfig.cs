@@ -42,7 +42,7 @@ namespace CommandParser
         /// <summary>
         /// Determines if one false from <see cref="BaseCommandAttribute.BeforeCommandExecute(object, object[])"/> will stop a command from being invoked
         /// </summary>
-        /// <remarks>True by default</remarks>
+        /// <remarks>Set to true by default</remarks>
         public bool ByPopularVote { get; set; } = true;
 
         /// <summary>
@@ -53,13 +53,20 @@ namespace CommandParser
         /// <summary>
         /// Char that splits the commands!
         /// </summary>
+        /// <remarks>Set to ' ' by default</remarks>
         public char[] Separator { get; set; } = new char[] { ' ' };
 
         /// <summary>
         /// Uses the <see cref="string.Trim()"/> when invoking <seealso cref="CommandHandler.Invoke(string)"/>
         /// </summary>
+        /// <remarks>Set to true by default</remarks>
         public bool AlwaysTrim { get; set; } = true;
 
+        /// <summary>
+        /// Allow null conversions to invoke a method.
+        /// </summary>
+        /// <remarks>Set to false by default</remarks>
+        public bool AllowNulls { get; set; } = false;
         /// <summary>
         /// Sends a message to all Loggers in the HandlerConfig
         /// </summary>
