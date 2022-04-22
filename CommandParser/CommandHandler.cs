@@ -304,14 +304,15 @@ public sealed class CommandHandler
         if (i is null)
             throw new Exceptions.InvalidModuleException(reg, "could not be created because an empty CTOR does not exist.");
 
-        foreach (MethodInfo commandMethod in typeMethods)
+        foreach (MethodInfo method in typeMethods)
         {
-            CommandAttribute cmd = commandMethod.GetCustomAttribute<CommandAttribute>();
-            IgnoreAttribute ig = commandMethod.GetCustomAttribute<IgnoreAttribute>(); //check if we should ignore adding in this command
+            CommandAttribute cmd = method.GetCustomAttribute<CommandAttribute>();
+            IgnoreAttribute ig = method.GetCustomAttribute<IgnoreAttribute>(); //check if we should ignore adding in this command
 
             if (cmd is not null && ig is null)
             {
-                AddCommand(cmd, i, commandMethod);
+                cmd.OnRegister(reg, method);
+                AddCommand(cmd, i, method);
             }
         }
 
@@ -340,6 +341,8 @@ public sealed class CommandHandler
                 continue;
             else if (method.GetCustomAttribute<IgnoreAttribute>() != null)
                 continue;
+
+            cmdAttr.OnUnRegister(unreg, method);
 
             CommandInfo inf = new(cmdAttr.CommandName, method.GetParameters().Length);
 

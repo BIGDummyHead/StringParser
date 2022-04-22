@@ -1,4 +1,7 @@
-﻿namespace CommandParser
+﻿using System;
+using System.Reflection;
+
+namespace CommandParser
 {
     /// <summary>
     /// The command attribute, used over any method within a <see cref="BaseCommandModule"/>
@@ -31,6 +34,16 @@
         public CommandAttribute()
         {
             UsingMethodName = true;
+        }
+
+        public virtual void OnUnRegister(Type from, MethodInfo method)
+        {
+            
+        }
+
+        public virtual void OnRegister(Type from, MethodInfo method)
+        {
+
         }
     }
 }
