@@ -11,7 +11,7 @@ namespace CommandParser
     public class CommandParameterAttribute : Attribute
     {
         /// <summary>
-        /// The instance of the handler used to invoke the <see cref="OnCollect(ParameterInfo, string[], ParameterInfo[])"/> method
+        /// The instance of the handler used to invoke the <see cref="OnCollect(ParameterInfo, object[], string[], object[], ParameterInfo[])"/> method
         /// </summary>
         public CommandHandler Handler { get; internal set; }
 

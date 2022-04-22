@@ -37,7 +37,7 @@ namespace CommandParser
         /// <summary>
         /// Does your command require a prefix to be invoked
         /// </summary>
-        public bool HasPrefix => Prefix != string.Empty;
+        public bool HasPrefix => !string.IsNullOrWhiteSpace(Prefix);
 
         /// <summary>
         /// Determines if one false from <see cref="BaseCommandAttribute.BeforeCommandExecute(object, object[])"/> will stop a command from being invoked

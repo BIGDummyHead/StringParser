@@ -31,7 +31,15 @@ namespace CommandParser
         {
             int index = parameters.IndexOf(pInfo);
 
-            string joined = args[index..(index + ParamCount)].Join();
+            int end = index + ParamCount;
+
+            if (args.Length < ParamCount)
+            {
+                Handler.Config.ToLog("Not enough arguments for parameter " + pInfo.Name + "! Expected " + ParamCount + " arguments, got " + args.Length + "!", LogLevel.Error);
+                return Array.Empty<string>();
+            }
+
+            string joined = args[index..end].Join();
 
             for (int i = index + 1; i < index + ParamCount; i++)
                 args[i] = null;

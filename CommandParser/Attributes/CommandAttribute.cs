@@ -4,7 +4,7 @@
     /// The command attribute, used over any method within a <see cref="BaseCommandModule"/>
     /// </summary>
     /// <remarks>This command is special and cannot be replicated.</remarks>
-    public sealed class CommandAttribute : BaseCommandAttribute
+    public class CommandAttribute : BaseCommandAttribute
     {
         /// <summary>
         /// The name of the command
@@ -14,7 +14,7 @@
         /// <summary>
         /// Is the command using the name of the method to invoke?
         /// </summary>
-        public bool UsingMethodName { get; }
+        public bool UsingMethodName { get; } = false;
 
         /// <summary>
         /// 
@@ -23,7 +23,6 @@
         public CommandAttribute(string name)
         {
             CommandName = name;
-            UsingMethodName = false;
         }
 
         /// <summary>

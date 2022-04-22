@@ -1,7 +1,7 @@
 ﻿namespace CommandParser;
 
 /// <summary>
-/// A special attribute, used for remaining text for a command, applied to the very last argument.
+/// Used for remaining text for a command, applied to the very last argument.
 /// </summary>
 public sealed class RemainingTextAttribute : RangeAttribute
 {

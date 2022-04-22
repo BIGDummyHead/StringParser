@@ -10,16 +10,51 @@ namespace CommandParser;
 /// </summary>
 public sealed class CommandHandler
 {
-    internal readonly Dictionary<CommandInfo, CommandAttribute> _commands = new();
-    internal readonly Dictionary<CommandInfo, object> _instances = new();
-    internal readonly Dictionary<CommandInfo, MethodInfo> _methods = new();
+    internal readonly Dictionary<CommandInfo, Info> _commands = new();
+    internal readonly Dictionary<MethodInfo, CommandInfo> _mc = new();
     internal readonly Dictionary<Type, BaseCommandModule> _modules = new();
+
+    internal struct Info
+    {
+        public readonly CommandAttribute cmdAttr;
+        public readonly object instance;
+        public readonly MethodInfo method;
+
+        public readonly bool isIgnored;
+        public readonly ParameterInfo[] parameters;
+
+        public readonly IReadOnlyDictionary<ParameterInfo, CommandParameterAttribute> parameterAttributes;
+
+        //ctor
+        public Info(CommandAttribute cmdAttr, object instance, MethodInfo method)
+        {
+            this.cmdAttr = cmdAttr;
+            this.instance = instance;
+            this.method = method;
+            isIgnored = method.GetCustomAttribute<IgnoreAttribute>() != null;
+            parameters = method.GetParameters();
+
+            List<KeyValuePair<ParameterInfo, CommandParameterAttribute>> ls = new();
+            foreach (ParameterInfo pi in parameters)
+            {
+                CommandParameterAttribute cpa = pi.GetCustomAttribute<CommandParameterAttribute>();
+
+                if (cpa == null)
+                    continue;
+
+                ls.Add(new(pi, cpa));
+            }
+
+            parameterAttributes = new Dictionary<ParameterInfo, CommandParameterAttribute>(ls);
+            ls.GetEnumerator().Dispose();
+        }
+    }
 
 
     /// <summary>
     /// Commands being invoked.
     /// </summary>
-    public IReadOnlyDictionary<CommandInfo, CommandAttribute> Commands => _commands;
+    public IReadOnlyDictionary<CommandInfo, CommandAttribute> Commands => _commands.ToDictionary(x => x.Key, x => x.Value.cmdAttr);
 
 
     /// <summary>
@@ -88,10 +123,11 @@ public sealed class CommandHandler
     /// <para>Example: !name arg1 arg2</para>
     /// </summary>
     /// <param name="invoker"></param>
+    /// <returns>The result of the method if any.</returns>
     /// <exception cref="Exceptions.InvalidConversionException"></exception>
-    public async Task Invoke(string invoker)
+    public async Task<object?> Invoke(string invoker)
     {
-        await Invoke(Array.Empty<object>(), invoker, Array.Empty<object>());
+        return await Invoke(Array.Empty<object>(), invoker, Array.Empty<object>());
     }
 
     /// <summary>
@@ -99,197 +135,141 @@ public sealed class CommandHandler
     /// <para>Example: !name arg1 arg2</para>
     /// </summary>
     /// <param name="invoker"></param>
-    /// <param name="aft">After arguments you want to add that are not string</param>
+    /// <param name="aft">Non-string object arguments that are supplied after the string args.</param>
+    /// <returns>The result of the method if any.</returns>
     /// <exception cref="Exceptions.InvalidConversionException"></exception>
-    public async Task Invoke(string invoker, params object[] aft)
+    public async Task<object?> Invoke(string invoker, params object[] aft)
     {
-        await Invoke(Array.Empty<object>(), invoker, aft);
+        return await Invoke(Array.Empty<object>(), invoker, aft);
     }
 
     /// <summary>
     /// Invoke a command, must start with the prefix - name - arguments
     /// <para>Example: !name arg1 arg2</para>
     /// </summary>
-    /// <param name="invoker"></param>
-    /// <param name="aft">After arguments you want to add that are not string</param>
-    /// <param name="pre">Before arguments you want to add that are not string</param>
+    /// <param name="pre">Non-string object arguments that are supplied before the string args.</param>
+    /// <param name="invoker">Invoking string arguments</param>
+    /// <param name="aft">Non-string object arguments that are supplied after the string args.</param>
+    /// <returns>The result of the method if any.</returns>
     /// <exception cref="Exceptions.InvalidConversionException"></exception>
-    public async Task Invoke(object[] pre, string invoker, object[] aft)
+    public async Task<object?> Invoke(object[] pre, string invoker, object[] aft)
     {
-        if (Config.AlwaysTrim)
-            invoker = invoker.Trim();
+        string prefix = Config.HasPrefix ? invoker[0..(Config.Prefix.Length)] : string.Empty;
 
-        string[] words = invoker.Split(Config.Separator);
-
-        if (words.Length < 1)
+        if (Config.HasPrefix)
         {
-            Config.ToLog("0 arguments invalid", LogLevel.Information);
-            return;
-        }
-        else if (!words[0].StartsWith(Config.Prefix))
-        {
-            Config.ToLog("Prefix invalid", LogLevel.Information);
-            return;
+            if (!prefix.Equals(Config.Prefix, Config.Comp))
+            {
+                Config.ToLog($"Prefix invalid! Expected '{Config.Prefix}'", LogLevel.Information);
+                return null;
+            }
         }
 
-        string commandName = Config.HasPrefix ? words[0][1..] : words[0];
+        string[] stringArgs = invoker.Split(Config.Separator);
 
-        string[] stringArguments = words[1..];
+        string commandName = stringArgs[0][prefix.Length..];
 
-        int argLen = pre.Length + stringArguments.Length + aft.Length;
+        stringArgs = stringArgs[1..];
 
-        CommandInfo mockInfo = new(commandName, argLen);
+        MethodInfo method = null;
 
-        CommandInfo comparingResult = Commands.Keys.FirstOrDefault(x => x.Name.Equals(commandName, Config.Comp));
+        var filteredCommands = _commands.Where(x => x.Key.Name.Equals(commandName, Config.Comp));
 
-        if (comparingResult == default)
+        if (!filteredCommands.Any())
         {
-            Config.ToLog($"'{commandName}' is not registered.", LogLevel.Warning);
-            return;
+            string b = $"There is no command with the name of '{commandName}'";
+
+            foreach (var item in _commands)
+            {
+                b += $"\r\n* {item.Key.Name}";
+            }
+
+            Config.ToLog(b, LogLevel.Warning);
+            return null;
         }
-        else
-            mockInfo.Name = comparingResult.Name;
 
-
-        List<object> methodInvoke = new(); //this list is responsible for the method invoking
-        MethodInfo invokeableMethod = null;
-
-        foreach (KeyValuePair<CommandInfo, MethodInfo> validMethods in _methods) //never use return in here!
+        foreach (KeyValuePair<CommandInfo, Info> selCommand in filteredCommands)
         {
-            //.Where(x => x.Value.GetCustomAttribute<CommandAttribute>().CommandName.Equals(mockInfo.Name, Config.Comp))
+            Info command = selCommand.Value;
 
-            CommandAttribute cmd_attr = validMethods.Value.GetCustomAttribute<CommandAttribute>();
-
-            if (string.IsNullOrEmpty(cmd_attr.CommandName))
-                cmd_attr.CommandName = validMethods.Value.Name;
-
-            if (!cmd_attr.CommandName.Equals(mockInfo.Name, Config.Comp))
-                continue;
-
-            MethodInfo method = validMethods.Value;
-
-
-            ParameterInfo[] methodParameters = method.GetParameters();
-
-            ParameterInfo[] skip = new ParameterInfo[(methodParameters.Length - pre.Length - aft.Length)];
-
-            Array.Copy(methodParameters, pre.Length, skip, 0, skip.Length);
-
-
-            for (int i = 0; i < skip.Length; i++)
+            foreach (ParameterInfo pi in command.parameters)
             {
-                ParameterInfo loopX = skip[i];
-
-                foreach (CommandParameterAttribute pinvokes in loopX.GetCustomAttributes<CommandParameterAttribute>().OrderByDescending(x => x.importance))
-                {
-                    pinvokes.Handler = this;
-                    //we should call this method in here because it can effect the total outcome of the command invokemennt
-                    stringArguments = await pinvokes.OnCollect(loopX, pre, stringArguments, aft, skip);
-                }
-            }
-
-            argLen = pre.Length + stringArguments.Length + aft.Length;
-
-
-            if (argLen < methodParameters.Length)
-            {
-                Config.ToLog("Argument length does not match Command length.", LogLevel.Warning);
-                continue;
-            }
-            else if (argLen != methodParameters.Length) //catches a possible exception
-            {
-                Config.ToLog($"After collection, Arguments length did not match the final {typeof(MethodInfo).Name} parameter length.", LogLevel.Warning);
-                continue; //great example of why not to return
-            }
-
-            for (int i = 0; i < stringArguments.Length; i++)
-            {
-                int strStart = i + pre.Length;
-
-                bool converted = Converter.CastString(pre, stringArguments[i], aft, methodParameters[strStart].ParameterType, out ValueTask<object> convertedObject, out string possibleError);
-                if (!converted)
-                {
-                    Config.ToLog(possibleError, LogLevel.Error);
-                    methodInvoke.Clear(); //clear invoke list
+                if (!command.parameterAttributes.TryGetValue(pi, out CommandParameterAttribute cpa))
                     continue;
-                }
-                else
-                {
-                    methodInvoke.Add(await convertedObject);
-                }
+
+                cpa.Handler = this;
+                stringArgs = await cpa.OnCollect(pi, pre, stringArgs, aft, command.parameters);
             }
 
-            invokeableMethod = method;
-            mockInfo = new CommandInfo(mockInfo.Name, argLen);
-        }
-
-        if (invokeableMethod == null)
-        {
-
-            Config.ToLog("Could not find any invokeable command. That matched Argument Length / Supplied Arguments.", LogLevel.Warning);
-            return;
-        }
-
-        IEnumerable<BaseCommandAttribute> baseCommandAttributes = invokeableMethod.GetCustomAttributes<BaseCommandAttribute>();
-        object moduleInstance = _instances.GetValue(mockInfo);
-        object[] methodInvokeArray = methodInvoke.ToArray();
-
-        if (invokeableMethod.GetParameters().Length == argLen)
-        {
-            if (pre.Length > 0)
-                methodInvokeArray = pre.Concat(methodInvokeArray).ToArray();
-
-            if (aft.Length > 0)
-                methodInvokeArray = methodInvokeArray.Concat(aft).ToArray();
-
-            int yea = 0, nei = 0; //voting system
-
-            foreach (BaseCommandAttribute attr in baseCommandAttributes)
+            if (command.parameters.Length == stringArgs.Length)
             {
-                attr.Handler = this;
-                if (await attr.BeforeCommandExecute(moduleInstance, methodInvokeArray))
-                    yea++;
-                else
-                    nei++;
-            }
-
-            bool cont = Config.ByPopularVote && yea > nei;
-
-            if (!cont)
-                cont = nei > 0;
-
-            if (cont)
-            {
-                if(!Config.AllowNulls)
-                {
-                    int at = 0;
-                    foreach (object ink in methodInvokeArray)
-                    {
-                        if (ink is null)
-                        {
-                            Config.ToLog($"An object was null at position {at+1} while trying to invoke.", LogLevel.Error);
-                            return;
-                        }
-                        at++;
-                    }
-                }
-                
-
-                object returnInstance = invokeableMethod.Invoke(moduleInstance, methodInvokeArray);
-
-                await _modules[moduleInstance.GetType()].OnCommandExecute(invokeableMethod, moduleInstance, methodInvokeArray, returnInstance);
-
-                foreach (BaseCommandAttribute attr in baseCommandAttributes)
-                {
-                    await attr.AfterCommandExecute(moduleInstance, methodInvokeArray, returnInstance);
-                }
-
+                method = command.method;
+                break;
             }
         }
-        else
+
+        int stringArgCount = stringArgs.Length;
+
+        int totalCount = pre.Length + stringArgCount + aft.Length;
+
+        if (method == null)
         {
-            Config.ToLog("Parameter length did not match the Invoking array that would have been supplied.", LogLevel.Error);
+            Config.ToLog($"No command with the name of '{commandName}' has '{totalCount}' arguments.", LogLevel.Warning);
+            return null;
         }
+
+        List<object> lso = new();
+
+        lso.AddRange(pre);
+
+        for (int i = 0; i < stringArgCount; i++)
+        {
+            int at = pre.Length + i;
+            string arg = stringArgs[i];
+
+            Type type = method.GetParameters()[at].ParameterType;
+
+            if (!Converter.CastString(pre, arg, aft, type, out ValueTask<object> converted, out string error))
+            {
+                Config.ToLog(error, LogLevel.Error);
+                return null;
+            }
+
+            lso.Add(await converted);
+        }
+
+        lso.AddRange(aft);
+
+        Info finalInfoCommand = _commands[_mc[method]];
+
+        IEnumerable<BaseCommandAttribute> bcas = method.GetCustomAttributes<BaseCommandAttribute>();
+
+        object[] invokeArr = lso.ToArray();
+
+        int yay = 0;
+        int nay = 0;
+
+        foreach (BaseCommandAttribute bca in bcas)
+        {
+            bca.Handler = this;
+            if (await bca.BeforeCommandExecute(finalInfoCommand.instance, invokeArr))
+                yay++;
+            else
+                nay++;
+        }
+
+        if (yay >= nay && Config.ByPopularVote || !Config.ByPopularVote)
+        {
+            object? result = method.Invoke(finalInfoCommand.instance, invokeArr);
+
+            foreach (BaseCommandAttribute bca in bcas)
+                await bca.AfterCommandExecute(finalInfoCommand.instance, invokeArr, result);
+
+            return result;
+        }
+
+        Config.ToLog($"Popular vote decided not to invoke '{commandName}' for method : '{method.Name}'", LogLevel.Information);
+        return null;
     }
 
     /// <summary>
@@ -319,7 +299,10 @@ public sealed class CommandHandler
         MethodInfo[] typeMethods = reg.GetMethods((BindingFlags)(-1)); //get all methods of all kinds
 
         //create an instance for invoking later on down the line
-        object i = Activator.CreateInstance(reg);
+        object? i = Activator.CreateInstance(reg);
+
+        if (i is null)
+            throw new Exceptions.InvalidModuleException(reg, "could not be created because an empty CTOR does not exist.");
 
         foreach (MethodInfo commandMethod in typeMethods)
         {
@@ -360,7 +343,7 @@ public sealed class CommandHandler
 
             CommandInfo inf = new(cmdAttr.CommandName, method.GetParameters().Length);
 
-            foreach (KeyValuePair<CommandInfo, CommandAttribute> item in _commands)
+            foreach (KeyValuePair<CommandInfo, Info> item in _commands)
             {
                 if (item.Key == inf)
                 {
@@ -370,9 +353,7 @@ public sealed class CommandHandler
             }
 
             _commands.Remove(inf);
-            _instances.Remove(inf);
-            _methods.Remove(inf);
-
+            _mc.Remove(method);
             _modules.Remove(unreg);
         }
     }
@@ -398,9 +379,10 @@ public sealed class CommandHandler
                 throw new Exceptions.CommandExistException(commandInfo.Name);
         }
 
-        _commands.Add(commandInfo, cmd);
-        _instances.Add(commandInfo, instance);
-        _methods.Add(commandInfo, info);
+        Info addingInfo = new(cmd, instance, info);
+
+        _commands.Add(commandInfo, addingInfo);
+        _mc.Add(info, commandInfo);
     }
 
     //registration and such above//
