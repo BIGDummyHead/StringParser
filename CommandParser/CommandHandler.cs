@@ -10,57 +10,21 @@ namespace CommandParser;
 /// </summary>
 public sealed class CommandHandler
 {
-    internal readonly Dictionary<CommandInfo, Info> _commands = new();
-    internal readonly Dictionary<MethodInfo, CommandInfo> _mc = new();
+    internal readonly Dictionary<MethodInfo, CommandInfo> _command = new();
     internal readonly Dictionary<Type, BaseCommandModule> _modules = new();
-
-    internal struct Info
-    {
-        public readonly CommandAttribute cmdAttr;
-        public readonly object instance;
-        public readonly MethodInfo method;
-
-        public readonly bool isIgnored;
-        public readonly ParameterInfo[] parameters;
-
-        public readonly IReadOnlyDictionary<ParameterInfo, CommandParameterAttribute> parameterAttributes;
-
-        //ctor
-        public Info(CommandAttribute cmdAttr, object instance, MethodInfo method)
-        {
-            this.cmdAttr = cmdAttr;
-            this.instance = instance;
-            this.method = method;
-            isIgnored = method.GetCustomAttribute<IgnoreAttribute>() != null;
-            parameters = method.GetParameters();
-
-            List<KeyValuePair<ParameterInfo, CommandParameterAttribute>> ls = new();
-            foreach (ParameterInfo pi in parameters)
-            {
-                CommandParameterAttribute cpa = pi.GetCustomAttribute<CommandParameterAttribute>();
-
-                if (cpa == null)
-                    continue;
-
-                ls.Add(new(pi, cpa));
-            }
-
-            parameterAttributes = new Dictionary<ParameterInfo, CommandParameterAttribute>(ls);
-            ls.GetEnumerator().Dispose();
-        }
-    }
-
 
     /// <summary>
     /// Commands being invoked.
     /// </summary>
-    public IReadOnlyDictionary<CommandInfo, CommandAttribute> Commands => _commands.ToDictionary(x => x.Key, x => x.Value.cmdAttr);
+    public IReadOnlyDictionary<MethodInfo, CommandInfo> Commands => _command;
 
 
     /// <summary>
-    /// Types of registered modules.
+    /// <see cref="BaseCommandModule"/>(s) registered.
     /// </summary>
-    public IEnumerable<Type> Modules => _modules.Keys;
+    public IReadOnlyDictionary<Type, BaseCommandModule> Modules => _modules;
+
+
 
 
     /// <summary>
@@ -173,13 +137,13 @@ public sealed class CommandHandler
 
         MethodInfo method = null;
 
-        var filteredCommands = _commands.Where(x => x.Key.Name.Equals(commandName, Config.Comp));
+        var filteredCommands = _command.Where(x => x.Key.Name.Equals(commandName, Config.Comp));
 
         if (!filteredCommands.Any())
         {
             string b = $"There is no command with the name of '{commandName}'";
 
-            foreach (var item in _commands)
+            foreach (var item in _command)
             {
                 b += $"\r\n* {item.Key.Name}";
             }
@@ -188,9 +152,9 @@ public sealed class CommandHandler
             return null;
         }
 
-        foreach (KeyValuePair<CommandInfo, Info> selCommand in filteredCommands)
+        foreach (KeyValuePair<MethodInfo, CommandInfo> selCommand in filteredCommands)
         {
-            Info command = selCommand.Value;
+            CommandInfo command = selCommand.Value;
 
             foreach (ParameterInfo pi in command.parameters)
             {
@@ -240,7 +204,7 @@ public sealed class CommandHandler
 
         lso.AddRange(aft);
 
-        Info finalInfoCommand = _commands[_mc[method]];
+        CommandInfo finalInfoCommand = _command[method];
 
         IEnumerable<BaseCommandAttribute> bcas = method.GetCustomAttributes<BaseCommandAttribute>();
 
@@ -311,8 +275,8 @@ public sealed class CommandHandler
 
             if (cmd is not null && ig is null)
             {
-                cmd.OnRegister(reg, method);
                 AddCommand(cmd, i, method);
+                cmd.OnRegister(reg, method);
             }
         }
 
@@ -335,30 +299,11 @@ public sealed class CommandHandler
 
         foreach (MethodInfo method in unreg.GetMethods((BindingFlags)(-1)))
         {
-            CommandAttribute cmdAttr = method.GetCustomAttribute<CommandAttribute>();
-
-            if (cmdAttr == null)
-                continue;
-            else if (method.GetCustomAttribute<IgnoreAttribute>() != null)
-                continue;
-
-            cmdAttr.OnUnRegister(unreg, method);
-
-            CommandInfo inf = new(cmdAttr.CommandName, method.GetParameters().Length);
-
-            foreach (KeyValuePair<CommandInfo, Info> item in _commands)
-            {
-                if (item.Key == inf)
-                {
-                    inf = item.Key;
-                    break;
-                }
-            }
-
-            _commands.Remove(inf);
-            _mc.Remove(method);
-            _modules.Remove(unreg);
+            if (_command.ContainsKey(method))
+                _command.Remove(method);
         }
+
+        _modules.Remove(unreg);
     }
 
     /// <summary>
@@ -373,19 +318,16 @@ public sealed class CommandHandler
         if (cmd.UsingMethodName)
             cmd.CommandName = info.Name;
 
-        CommandInfo commandInfo = new(cmd.CommandName, info.GetParameters().Length);
+        CommandInfo commandInfo = new(cmd.CommandName, cmd, instance, info);
 
         //both _commands and _instances contain the same keys
         foreach (var command in Commands)
         {
-            if (command.Key == commandInfo)
+            if (command.Value == commandInfo)
                 throw new Exceptions.CommandExistException(commandInfo.Name);
         }
 
-        Info addingInfo = new(cmd, instance, info);
-
-        _commands.Add(commandInfo, addingInfo);
-        _mc.Add(info, commandInfo);
+        _command.Add(info, commandInfo);
     }
 
     //registration and such above//
@@ -406,11 +348,63 @@ public struct CommandInfo
     /// </summary>
     public int ParameterCount { get; internal set; }
 
-    internal CommandInfo(string name, int count)
+    internal CommandInfo(string name, CommandAttribute cmdAttr, object instance, MethodInfo method)
     {
-        ParameterCount = count;
         Name = name;
+
+        this.cmdAttr = cmdAttr;
+        this.instance = instance;
+        this.method = method;
+        isIgnored = method.GetCustomAttribute<IgnoreAttribute>() != null;
+        parameters = method.GetParameters();
+
+        ParameterCount = parameters.Length;
+
+        List<KeyValuePair<ParameterInfo, CommandParameterAttribute>> ls = new();
+        foreach (ParameterInfo pi in parameters)
+        {
+            CommandParameterAttribute cpa = pi.GetCustomAttribute<CommandParameterAttribute>();
+
+            if (cpa == null)
+                continue;
+
+            ls.Add(new(pi, cpa));
+        }
+
+        parameterAttributes = new Dictionary<ParameterInfo, CommandParameterAttribute>(ls);
+        ls.GetEnumerator().Dispose();
+
     }
+
+    /// <summary>
+    /// The <see cref="CommandAttribute"/> of the command
+    /// </summary>
+    public readonly CommandAttribute cmdAttr;
+    /// <summary>
+    /// The instance of the type.
+    /// </summary>
+    public readonly object instance;
+    /// <summary>
+    /// The method to invoke.
+    /// </summary>
+    public readonly MethodInfo method;
+
+    /// <summary>
+    /// Is the method ignored.
+    /// </summary>
+    public readonly bool isIgnored;
+
+    /// <summary>
+    /// Parameters collected from the method.
+    /// </summary>
+    public readonly ParameterInfo[] parameters;
+
+    /// <summary>
+    /// <see cref="CommandParameterAttribute"/>(s) from the <seealso cref="method"/>.
+    /// </summary>
+
+    public readonly IReadOnlyDictionary<ParameterInfo, CommandParameterAttribute> parameterAttributes;
+
 
     /// <summary>
     /// Checks if the left and right have the same name and parameter count.
