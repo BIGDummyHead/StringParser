@@ -137,7 +137,7 @@ public sealed class CommandHandler
 
         MethodInfo method = null;
 
-        var filteredCommands = _command.Where(x => x.Key.Name.Equals(commandName, Config.Comp));
+        var filteredCommands = _command.Where(x => x.Value.Name.Equals(commandName, Config.Comp));
 
         if (!filteredCommands.Any())
         {
@@ -165,7 +165,7 @@ public sealed class CommandHandler
                 stringArgs = await cpa.OnCollect(pi, pre, stringArgs, aft, command.parameters);
             }
 
-            if (command.parameters.Length == stringArgs.Length)
+            if (command.parameters.Length == pre.Length + stringArgs.Length + aft.Length)
             {
                 method = command.method;
                 break;
