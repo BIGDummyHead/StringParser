@@ -118,6 +118,12 @@ public sealed class CommandHandler
     /// <exception cref="Exceptions.InvalidConversionException"></exception>
     public async Task<object?> Invoke(object[] pre, string invoker, object[] aft)
     {
+        if (invoker.Length < Config.Prefix.Length)
+        {
+            Config.ToLog("Invalid invocation, too short", LogLevel.Error);
+            return null;
+        }
+
         string prefix = Config.HasPrefix ? invoker[0..(Config.Prefix.Length)] : string.Empty;
 
         if (Config.HasPrefix)

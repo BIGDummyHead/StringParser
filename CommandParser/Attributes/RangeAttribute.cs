@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 namespace CommandParser;
 
 /// <summary>
-/// Allows you to set a range of minimum and maximum arguments that can be passed into the last parameter.
+/// Allows you to set a range of minimum and maximum arguments that can be passed into the last string parameter.
 /// </summary>
 /// <remarks>Can only be applied to the last parameter</remarks>
 public class RangeAttribute : CommandParameterAttribute
@@ -58,18 +58,22 @@ public class RangeAttribute : CommandParameterAttribute
 #pragma warning disable
     public override async Task<string[]> OnCollect(ParameterInfo pInfo, object[] bef, string[] args, object[] aft, ParameterInfo[] parameters)
     {
+        int stringArgLen = parameters.Length - bef.Length - aft.Length;
+
         //check if the last parameter is the one we are looking for
-        if (parameters[^1] != pInfo)
+        if (parameters[stringArgLen] != pInfo)
         {
             //Invalid use on {pInfo.Name}. {typeof(Range).Name} must be used on the last parameter ({pparameters[^1].Name}
             Handler.Config.ToLog($"Invalid use on {pInfo.Name}. {typeof(Range).Name} attribute must be used on the last parameter ({parameters[^1].Name})", LogLevel.Warning);
             return args;
         }
 
-        string[] collectedArgs = args[(parameters.Length - 1)..];
+
+        string[] collectedArgs = args[(stringArgLen - 1)..];
+
         //check if the amount of arguments is lower than the min
 
-        if (args.Length < parameters.Length && min == 0)
+        if (args.Length < stringArgLen && min == 0)
         {
             string[] empCopy = new string[args.Length + 1];
             Array.Copy(args, empCopy, args.Length);
