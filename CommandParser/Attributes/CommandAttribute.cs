@@ -4,7 +4,7 @@ using System.Reflection;
 namespace CommandParser
 {
     /// <summary>
-    /// The command attribute, used over any method within a <see cref="BaseCommandModule"/>
+    /// The command attribute, used over any method within a <see cref="ICommandModule"/>
     /// </summary>
     /// <remarks>This command is special and cannot be replicated.</remarks>
     public class CommandAttribute : BaseCommandAttribute

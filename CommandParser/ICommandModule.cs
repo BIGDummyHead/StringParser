@@ -6,7 +6,7 @@ namespace CommandParser
     /// <summary>
     /// A base for all command modules
     /// </summary>
-    public abstract class BaseCommandModule
+    public interface ICommandModule
     {
 #nullable enable
 #pragma warning disable CS1998
@@ -17,10 +17,7 @@ namespace CommandParser
         /// <param name="instance">The instance used to invoke the <paramref name="method"/>.</param>
         /// <param name="invokes">The parameters used to invoke the <paramref name="method"/></param>
         /// <param name="returnInstance">Return of the command if any</param>
-        public virtual async Task OnCommandExecute(MethodInfo method, object instance, object[] invokes, object? returnInstance)
-        {
-
-        }
+        ValueTask OnCommandExecute(MethodInfo method, object instance, object[] invokes, object? returnInstance);
 #pragma warning restore CS1998
 #nullable disable
     }

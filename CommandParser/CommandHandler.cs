@@ -11,7 +11,7 @@ namespace CommandParser;
 public sealed class CommandHandler
 {
     internal readonly Dictionary<MethodInfo, CommandInfo> _command = new();
-    internal readonly Dictionary<Type, BaseCommandModule> _modules = new();
+    internal readonly Dictionary<Type, ICommandModule> _modules = new();
 
     /// <summary>
     /// Commands being invoked.
@@ -20,9 +20,9 @@ public sealed class CommandHandler
 
 
     /// <summary>
-    /// <see cref="BaseCommandModule"/>(s) registered.
+    /// <see cref="ICommandModule"/>(s) registered.
     /// </summary>
-    public IReadOnlyDictionary<Type, BaseCommandModule> Modules => _modules;
+    public IReadOnlyDictionary<Type, ICommandModule> Modules => _modules;
 
 
 
@@ -232,6 +232,8 @@ public sealed class CommandHandler
         {
             object? result = method.Invoke(finalInfoCommand.instance, invokeArr);
 
+            await this.Modules[method.DeclaringType].OnCommandExecute(method, finalInfoCommand.instance, invokeArr, result);
+
             foreach (BaseCommandAttribute bca in bcas)
                 await bca.AfterCommandExecute(finalInfoCommand.instance, invokeArr, result);
 
@@ -248,21 +250,21 @@ public sealed class CommandHandler
     /// <typeparam name="T"></typeparam>
     /// <exception cref="Exceptions.InvalidModuleException"></exception>
     /// <exception cref="Exceptions.CommandExistException"></exception>
-    public void RegisterModule<T>() where T : BaseCommandModule
+    public void RegisterModule<T>() where T : ICommandModule
     {
         RegisterModule(typeof(T));
     }
 
     /// <summary>
-    /// Register a type with <see cref="CommandAttribute"/>, must inherit <seealso cref="BaseCommandModule"/>
+    /// Register a type with <see cref="CommandAttribute"/>, must inherit <seealso cref="ICommandModule"/>
     /// </summary>
     /// <param name="reg"></param>
     /// <exception cref="Exceptions.InvalidModuleException"></exception>
     /// <exception cref="Exceptions.CommandExistException"></exception>
     public void RegisterModule(Type reg)
     {
-        if (!reg.Inherits(typeof(BaseCommandModule)))
-            throw new Exceptions.InvalidModuleException(reg, $"does not inherit '{typeof(BaseCommandModule).Name}.");
+        if (!reg.Inherits(typeof(ICommandModule)))
+            throw new Exceptions.InvalidModuleException(reg, $"does not inherit '{typeof(ICommandModule).Name}.");
         else if (reg.GetConstructor(Array.Empty<Type>()) == null || reg.IsAbstract)
             throw new Exceptions.InvalidModuleException(reg, "does not have an empty constructor, or an instance of it can not be made.");
 
@@ -286,7 +288,7 @@ public sealed class CommandHandler
             }
         }
 
-        _modules.Add(reg, (BaseCommandModule)i);
+        _modules.Add(reg, (ICommandModule)i);
     }
 
 
@@ -298,7 +300,7 @@ public sealed class CommandHandler
     /// <param name="unreg"></param>
     public void UnRegisterModule(Type unreg)
     {
-        if (!unreg.Inherits(typeof(BaseCommandModule)))
+        if (!unreg.Inherits(typeof(ICommandModule)))
             return;
         else if (!_modules.ContainsKey(unreg))
             return;
