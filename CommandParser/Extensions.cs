@@ -88,6 +88,9 @@ namespace CommandParser
 
         internal static bool Inherits(this Type inheritsB, Type b)
         {
+            //check if b is a interface
+            if (b.IsInterface && inheritsB.GetInterface(nameof(b.Name)) != null)
+                return true;
             if (inheritsB.BaseType == b)
                 return true;
             else if (inheritsB.BaseType == typeof(Object))
