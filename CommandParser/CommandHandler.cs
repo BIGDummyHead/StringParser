@@ -308,7 +308,10 @@ public sealed class CommandHandler
         foreach (MethodInfo method in unreg.GetMethods((BindingFlags)(-1)))
         {
             if (_command.ContainsKey(method))
+            {
+                _command[method].cmdAttr.OnUnRegister(unreg, method);
                 _command.Remove(method);
+            }
         }
 
         _modules.Remove(unreg);

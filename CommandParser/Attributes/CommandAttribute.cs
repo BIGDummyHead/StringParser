@@ -36,11 +36,21 @@ namespace CommandParser
             UsingMethodName = true;
         }
 
+        /// <summary>
+        /// When a command is unregistered
+        /// </summary>
+        /// <param name="from">The type that contained this command</param>
+        /// <param name="method">The method that the command was on</param>
         public virtual void OnUnRegister(Type from, MethodInfo method)
         {
             
         }
 
+        /// <summary>
+        /// When a command is registered
+        /// </summary>
+        /// <param name="from">The type that contained this command</param>
+        /// <param name="method">The method that the command was on</param>
         public virtual void OnRegister(Type from, MethodInfo method)
         {
 
