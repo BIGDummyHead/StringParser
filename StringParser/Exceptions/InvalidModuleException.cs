@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CommandParser.Exceptions
+namespace StringParser.Exceptions
 {
     /// <summary>
     /// When a module is invalid to be registered

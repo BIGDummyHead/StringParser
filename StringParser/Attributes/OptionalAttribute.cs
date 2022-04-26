@@ -1,4 +1,4 @@
-namespace CommandParser;
+namespace StringParser;
 /// <summary>
 /// Creates an optional parameter.
 /// </summary>

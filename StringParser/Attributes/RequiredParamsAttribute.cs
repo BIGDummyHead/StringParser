@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// An attribute to specify how many arguments need to be passed in.
@@ -18,7 +18,7 @@ namespace CommandParser
         /// <summary>
         /// Specify how many arguments need to be passed in
         /// </summary>
-        public RequiredParamsAttribute(int pCount) : base(Importance.Critical)
+        public RequiredParamsAttribute(int pCount) : base()
         {
             if (pCount <= 1)
                 throw new Exception("Parameter count cannot be equal or less than 1");

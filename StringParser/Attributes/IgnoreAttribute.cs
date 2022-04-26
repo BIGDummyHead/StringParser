@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// Ignore this command from being registered.

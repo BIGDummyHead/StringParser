@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// An attribute that is collected to provide information to the CommandHandler about chaning the arguments and such
@@ -13,24 +13,18 @@ namespace CommandParser
         /// <summary>
         /// The instance of the handler used to invoke the <see cref="OnCollect(ParameterInfo, object[], string[], object[], ParameterInfo[])"/> method
         /// </summary>
-        public CommandHandler Handler { get; internal set; }
-
-        /// <summary>
-        /// The level of importance of the parameter
-        /// </summary>
-        public readonly Importance importance;
+        public Handler Handler { get; internal set; }
 
         //a ctor with the importance parameter
         /// <summary>
         /// </summary>
-        public CommandParameterAttribute(Importance importance)
+        public CommandParameterAttribute()
         {
-            this.importance = importance;
         }
 
 #pragma warning disable CS1998 //async method does not contain await.
         /// <summary>
-        /// When this attribute is collected in the <see cref="CommandHandler"/>
+        /// When this attribute is collected in the <see cref="StringParser.Handler"/>
         /// </summary>
         /// <param name="applied">Parameters passed into the Command</param>
         /// <param name="args">Arguments</param>

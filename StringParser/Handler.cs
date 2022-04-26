@@ -3,29 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using StringParser.Interfaces;
 
-namespace CommandParser;
+namespace StringParser;
+
 /// <summary>
-/// A handler to invoke commands.
+/// A class that can intake a prefix, name, and arguments and parse them into a invoked command.
 /// </summary>
-public sealed class CommandHandler
+public sealed class Handler
 {
-    internal readonly Dictionary<MethodInfo, CommandInfo> _command = new();
+    internal readonly Dictionary<MethodInfo, CollectedCommand> _command = new();
     internal readonly Dictionary<Type, ICommandModule> _modules = new();
 
     /// <summary>
     /// Commands being invoked.
     /// </summary>
-    public IReadOnlyDictionary<MethodInfo, CommandInfo> Commands => _command;
-
+    public IReadOnlyDictionary<MethodInfo, CollectedCommand> Commands => _command;
 
     /// <summary>
     /// <see cref="ICommandModule"/>(s) registered.
     /// </summary>
     public IReadOnlyDictionary<Type, ICommandModule> Modules => _modules;
-
-
-
 
     /// <summary>
     /// Options for your Handler
@@ -33,51 +31,24 @@ public sealed class CommandHandler
     public HandlerConfig Config { get; init; }
 
     /// <summary>
-    /// Used converter
+    /// The used converter.
     /// </summary>
-    public StringConverter Converter { get; } = new StringConverter();
+    /// <para><see cref="StringConverter"/> is provided by default.</para>
+    public IStringConverter Converter { get; set; } = new StringConverter();
 
     /// <summary>
     /// 
     /// </summary>
     /// <param name="config"></param>
-    public CommandHandler(HandlerConfig config)
+    public Handler(HandlerConfig config)
     {
         Config = config;
-
-        Converter.RegisterConverter(delegate (string parse) { return ValueTask.FromResult(parse); }); //add in basic converters here
-
-#pragma warning disable CS1998
-        Converter.RegisterConverter(async delegate (string parse)
-        {
-            if (int.TryParse(parse, out int result))
-                return result;
-
-            return 0;
-        });
-
-        Converter.RegisterConverter(async delegate (string parse)
-        {
-            if (double.TryParse(parse, out double result))
-                return result;
-
-            return 0;
-        });
-
-        Converter.RegisterConverter(async delegate (string parse)
-        {
-            if (float.TryParse(parse, out float result))
-                return result;
-
-            return 0;
-        });
-#pragma warning restore CS1998
     }
 
     /// <summary>
     /// Create a command handler with the <see cref="HandlerConfig.Default"/>
     /// </summary>
-    public CommandHandler() : this(HandlerConfig.Default)
+    public Handler() : this(HandlerConfig.Default)
     {
 
     }
@@ -158,9 +129,9 @@ public sealed class CommandHandler
             return null;
         }
 
-        foreach (KeyValuePair<MethodInfo, CommandInfo> selCommand in filteredCommands)
+        foreach (KeyValuePair<MethodInfo, CollectedCommand> selCommand in filteredCommands)
         {
-            CommandInfo command = selCommand.Value;
+            CollectedCommand command = selCommand.Value;
 
             foreach (ParameterInfo pi in command.parameters)
             {
@@ -210,7 +181,7 @@ public sealed class CommandHandler
 
         lso.AddRange(aft);
 
-        CommandInfo finalInfoCommand = _command[method];
+        CollectedCommand finalInfoCommand = _command[method];
 
         IEnumerable<BaseCommandAttribute> bcas = method.GetCustomAttributes<BaseCommandAttribute>();
 
@@ -265,7 +236,7 @@ public sealed class CommandHandler
     {
         if (!reg.Inherits(typeof(ICommandModule)))
             throw new Exceptions.InvalidModuleException(reg, $"does not inherit '{typeof(ICommandModule).Name}.");
-        else if (reg.GetConstructor(Array.Empty<Type>()) == null || reg.IsAbstract)
+        else if (reg.GetConstructor(Array.Empty<Type>()) == null || reg.IsAbstract || reg.IsInterface)
             throw new Exceptions.InvalidModuleException(reg, "does not have an empty constructor, or an instance of it can not be made.");
 
         MethodInfo[] typeMethods = reg.GetMethods((BindingFlags)(-1)); //get all methods of all kinds
@@ -278,10 +249,9 @@ public sealed class CommandHandler
 
         foreach (MethodInfo method in typeMethods)
         {
-            CommandAttribute cmd = method.GetCustomAttribute<CommandAttribute>();
-            IgnoreAttribute ig = method.GetCustomAttribute<IgnoreAttribute>(); //check if we should ignore adding in this command
-
-            if (cmd is not null && ig is null)
+            CommandAttribute cmd;
+            if(method.GetCustomAttribute<IgnoreAttribute>() is null && 
+                (cmd = method.GetCustomAttribute<CommandAttribute>()) is not null)
             {
                 AddCommand(cmd, i, method);
                 cmd.OnRegister(reg, method);
@@ -290,9 +260,6 @@ public sealed class CommandHandler
 
         _modules.Add(reg, (ICommandModule)i);
     }
-
-
-
 
     /// <summary>
     /// Fully unregisters a module
@@ -323,16 +290,15 @@ public sealed class CommandHandler
     /// <typeparam name="T"></typeparam>
     public void UnRegisterModule<T>() => UnRegisterModule(typeof(T));
 
-
     private void AddCommand(CommandAttribute cmd, object instance, MethodInfo info)
     {
         if (cmd.UsingMethodName)
             cmd.CommandName = info.Name;
 
-        CommandInfo commandInfo = new(cmd.CommandName, cmd, instance, info);
+        CollectedCommand commandInfo = new(cmd.CommandName, cmd, instance, info);
 
         //both _commands and _instances contain the same keys
-        foreach (var command in Commands)
+        foreach (KeyValuePair<MethodInfo, CollectedCommand> command in Commands)
         {
             if (command.Value == commandInfo)
                 throw new Exceptions.CommandExistException(commandInfo.Name);
@@ -340,15 +306,12 @@ public sealed class CommandHandler
 
         _command.Add(info, commandInfo);
     }
-
-    //registration and such above//
-
 }
 
 /// <summary>
 /// Specific info about a command, for allowing more commands
 /// </summary>
-public struct CommandInfo
+public struct CollectedCommand
 {
     /// <summary>
     /// Name provided 
@@ -359,7 +322,7 @@ public struct CommandInfo
     /// </summary>
     public int ParameterCount { get; internal set; }
 
-    internal CommandInfo(string name, CommandAttribute cmdAttr, object instance, MethodInfo method)
+    internal CollectedCommand(string name, CommandAttribute cmdAttr, object instance, MethodInfo method)
     {
         Name = name;
 
@@ -422,7 +385,7 @@ public struct CommandInfo
     /// </summary>
     /// <param name="left"></param>
     /// <param name="right"></param>
-    public static bool operator ==(CommandInfo left, CommandInfo right)
+    public static bool operator ==(CollectedCommand left, CollectedCommand right)
     {
         if (string.IsNullOrEmpty(left.Name) || string.IsNullOrEmpty(right.Name))
             return false;
@@ -435,7 +398,7 @@ public struct CommandInfo
     /// </summary>
     /// <param name="left"></param>
     /// <param name="right"></param>
-    public static bool operator !=(CommandInfo left, CommandInfo right)
+    public static bool operator !=(CollectedCommand left, CollectedCommand right)
     {
         return !(left == right);
     }
@@ -454,10 +417,10 @@ public struct CommandInfo
     /// <returns></returns>
     public override bool Equals(object obj)
     {
-        if (obj.GetType() != typeof(CommandInfo))
+        if (obj.GetType() != typeof(CollectedCommand))
             return false;
 
-        return this == (CommandInfo)obj;
+        return this == (CollectedCommand)obj;
     }
 
 }

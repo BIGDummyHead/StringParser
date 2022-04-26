@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace CommandParser.Interfaces
+namespace StringParser.Interfaces
 {
     /// <summary>
     /// Helps handle conversions easier
@@ -37,13 +37,13 @@ namespace CommandParser.Interfaces
             };
         }
 
-        public static ConverterHelper Create<T>(Func<string, ValueTask<T>> converter)
+        public static ConverterHelper Create<T>(Func<object[], string, object[], ValueTask<T>> converter)
         {
             return new ConverterHelper
             {
                 Convert = async delegate (object[] before, string parse, object[] after)
                 {
-                    return await converter(parse);
+                    return await converter(before, parse, after);
                 },
                 ConversionType = typeof(T)
             };

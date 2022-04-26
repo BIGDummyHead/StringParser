@@ -1,10 +1,10 @@
-﻿using CommandParser.Interfaces;
+﻿using StringParser.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// Extensions for the library
@@ -17,7 +17,7 @@ namespace CommandParser
         /// <typeparam name="T"></typeparam>
         /// <param name="handler"></param>
         /// <param name="converter"></param>
-        public static void RegisterConverter<T>(this CommandHandler handler, Func<string, ValueTask<T>> converter)
+        public static void RegisterConverter<T>(this Handler handler, Func<object[], string, object[], ValueTask<T>> converter)
         {
             handler.Converter.RegisterConverter(converter);
         }
@@ -27,7 +27,7 @@ namespace CommandParser
         /// </summary>
         /// <param name="handler"></param>
         /// <param name="converter"></param>
-        public static void RegisterConverter<T>(this CommandHandler handler, IConverter<T> converter)
+        public static void RegisterConverter<T>(this Handler handler, IConverter<T> converter)
         {
             handler.Converter.RegisterConverter(converter);
         }
@@ -37,7 +37,7 @@ namespace CommandParser
         /// </summary>
         /// <param name="handler"></param>
         /// <param name="converterType"></param>
-        public static void UnRegisterConverter(this CommandHandler handler, Type converterType)
+        public static void UnRegisterConverter(this Handler handler, Type converterType)
         {
             handler.Converter.UnRegisterConverter(converterType);
         }
@@ -47,7 +47,7 @@ namespace CommandParser
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="handler"></param>
-        public static void UnRegisterConverter<T>(this CommandHandler handler)
+        public static void UnRegisterConverter<T>(this Handler handler)
         {
             handler.Converter.UnRegisterConverter<T>();
         }
@@ -73,9 +73,9 @@ namespace CommandParser
             return ar.Where(x => x != null).ToArray();
         }
 
-        internal static TVal GetValue<TVal>(this IReadOnlyDictionary<CommandInfo, TVal> dict, CommandInfo value)
+        internal static TVal GetValue<TVal>(this IReadOnlyDictionary<CollectedCommand, TVal> dict, CollectedCommand value)
         {
-            foreach (KeyValuePair<CommandInfo, TVal> entry in dict)
+            foreach (KeyValuePair<CollectedCommand, TVal> entry in dict)
             {
                 if (entry.Key == value)
                 {
@@ -88,13 +88,13 @@ namespace CommandParser
 
         internal static bool Inherits(this Type inheritsB, Type b)
         {
-            //check if b is a interface
-            if (b.IsInterface && inheritsB.GetInterface(nameof(b.Name)) != null)
+            if (b.IsInterface && inheritsB.GetInterface(b.Name) != null)
                 return true;
-            if (inheritsB.BaseType == b)
+            else if (inheritsB.BaseType == b)
                 return true;
             else if (inheritsB.BaseType == typeof(Object))
                 return false;
+
 
             return Inherits(inheritsB, b.BaseType);
         }

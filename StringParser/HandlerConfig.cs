@@ -1,10 +1,10 @@
-﻿using CommandParser.Interfaces;
+﻿using StringParser.Interfaces;
 using System;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
-    /// Configuration for <see cref="CommandHandler"/>
+    /// Configuration for <see cref="Handler"/>
     /// </summary>
     public sealed class HandlerConfig
     {
@@ -46,9 +46,9 @@ namespace CommandParser
         public bool ByPopularVote { get; set; } = true;
 
         /// <summary>
-        /// The logger used for the config and the <see cref="CommandHandler"/>
+        /// The logger used for the config and the <see cref="Handler"/>
         /// </summary>
-        public ILog Logger { get; set; } = new Logger();
+        public ILogger Logger { get; set; } = new Logger();
 
         /// <summary>
         /// Char that splits the commands!
@@ -57,7 +57,7 @@ namespace CommandParser
         public char[] Separator { get; set; } = new char[] { ' ' };
 
         /// <summary>
-        /// Uses the <see cref="string.Trim()"/> when invoking <seealso cref="CommandHandler.Invoke(string)"/>
+        /// Uses the <see cref="string.Trim()"/> when invoking <seealso cref="Handler.Invoke(string)"/>
         /// </summary>
         /// <remarks>Set to true by default</remarks>
         public bool AlwaysTrim { get; set; } = true;
@@ -102,7 +102,7 @@ namespace CommandParser
         internal StringComparison Comp => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
         /// <summary>
-        /// A config for <see cref="CommandHandler"/>
+        /// A config for <see cref="Handler"/>
         /// </summary>
         public HandlerConfig()
         {

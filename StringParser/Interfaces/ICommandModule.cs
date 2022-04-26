@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// A base for all command modules

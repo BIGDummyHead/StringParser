@@ -1,9 +1,9 @@
-﻿namespace CommandParser.Interfaces;
+﻿namespace StringParser.Interfaces;
 
 /// <summary>
 /// A logging interface
 /// </summary>
-public interface ILog
+public interface ILogger
 {
     /// <summary>
     /// Any log Level message

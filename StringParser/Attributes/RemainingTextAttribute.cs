@@ -1,4 +1,4 @@
-﻿namespace CommandParser;
+﻿namespace StringParser;
 
 /// <summary>
 /// Used for remaining text for a command, applied to the very last string argument.

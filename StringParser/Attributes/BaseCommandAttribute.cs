@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// A base attribute used for attributes above commands.
@@ -12,7 +12,7 @@ namespace CommandParser
         /// <summary>
         /// The handler instance that invoked this.
         /// </summary>
-        public CommandHandler Handler { get; set; }
+        public Handler Handler { get; set; }
 
         /// <summary>
         /// Before the command is executed

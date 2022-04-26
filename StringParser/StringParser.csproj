@@ -5,6 +5,8 @@
     <TargetFramework>net6.0</TargetFramework>
     <ApplicationIcon />
     <StartupObject />
+    <RootNamespace>StringParser</RootNamespace>
+    <AssemblyName>StringParser</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -1,15 +1,15 @@
-﻿using CommandParser.Interfaces;
+﻿using StringParser.Interfaces;
 using System;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
-    /// Basic logger that is an interface for <see cref="ILog"/>
+    /// Basic logger that is an interface for <see cref="ILogger"/>
     /// </summary>
 
-    public sealed class Logger : ILog
+    public sealed class Logger : ILogger
     {
-#pragma warning disable
+#pragma warning disable CS1591
         public void Log(string message, LogLevel lvl)
         {
             Console.ForegroundColor = Color(lvl);
@@ -58,9 +58,6 @@ namespace CommandParser
         public void LogWarning(string message)
         {
         }
-
-
-
-#pragma warning restore
+#pragma warning restore CS1591
     }
 }

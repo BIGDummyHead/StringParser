@@ -2,7 +2,7 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace CommandParser;
+namespace StringParser;
 
 /// <summary>
 /// Allows you to set a range of minimum and maximum arguments that can be passed into the last string parameter.
@@ -23,7 +23,7 @@ public class RangeAttribute : CommandParameterAttribute
     /// <param name="min"></param>
     /// <param name="max"></param>
     /// <exception cref="Exception">Thrown when min > max or min/max lower than 1</exception>
-    public RangeAttribute(int min, int max) : base(Importance.Medium)
+    public RangeAttribute(int min, int max) : base()
     {
         //check if min is lower than max
         if (min > max)

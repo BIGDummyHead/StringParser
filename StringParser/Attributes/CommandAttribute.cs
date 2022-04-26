@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace CommandParser
+namespace StringParser
 {
     /// <summary>
     /// The command attribute, used over any method within a <see cref="ICommandModule"/>

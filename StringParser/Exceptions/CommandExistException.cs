@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CommandParser.Exceptions
+namespace StringParser.Exceptions
 {
     /// <summary>
     /// Thrown when a command exist
