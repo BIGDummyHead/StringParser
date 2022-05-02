@@ -109,15 +109,18 @@ namespace StringParser
         }
 
         /// <summary>
-        ///Copies the values from another config
+        /// Copies values from another config
         /// </summary>
-        public HandlerConfig(HandlerConfig config)
+        /// <param name="other">The other config to copy from!</param>
+        public HandlerConfig(HandlerConfig other)
         {
-            Prefix = config.Prefix;
-            ByPopularVote = config.ByPopularVote;
-            IgnoreCase = config.IgnoreCase;
-            Separator = config.Separator;
-            AlwaysTrim = config.AlwaysTrim;
+            Prefix = other.Prefix;
+            ByPopularVote = other.ByPopularVote;
+            Logger = other.Logger;
+            Separator = other.Separator;
+            AlwaysTrim = other.AlwaysTrim;
+            AllowNulls = other.AllowNulls;
+            IgnoreCase = other.IgnoreCase;
         }
 
     }

@@ -21,28 +21,6 @@ namespace StringParser.Interfaces
         /// <returns>True if the type has a registered converter.</returns>
         bool CanConvert<T>();
         /// <summary>
-        /// Cast a string to a type instance
-        /// </summary>
-        /// <param name="before">Any arguments that come before, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
-        /// <param name="parse">Parsing</param>
-        /// <param name="after">Any arguments that come after, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
-        /// <param name="castType">The type to cast to</param>
-        /// <param name="converted">The converted object</param>
-        /// <param name="error">Any errors found</param>
-        /// <returns>True if a conversion was successful</returns>
-        bool CastString(object[] before, string parse, object[] after, Type castType, out ValueTask<object> converted, out string error);
-        /// <summary>
-        /// Cast a string to a type instance
-        /// </summary>
-        /// <param name="before">Any arguments that come before, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
-        /// <param name="parse">Parsing</param>
-        /// <param name="after">Any arguments that come after, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
-        /// <typeparam name="T">The type to cast to</typeparam>
-        /// <param name="converted">The converted object</param>
-        /// <param name="error">Any errors found</param>
-        /// <returns>True if a conversion was successful</returns>
-        bool CastString<T>(object[] before, string parse, object[] after, out ValueTask<T> converted, out string error);
-        /// <summary>
         /// Dynamically create a <see cref="IConverter{T}"/> using a <see cref="Func{T1,T2,T3, TResult}"/>
         /// </summary>
         /// <typeparam name="T">The type the converter will return.</typeparam>
@@ -84,5 +62,28 @@ namespace StringParser.Interfaces
         /// <param name="converted">The converted object.</param>
         /// <returns>True if the converter of <typeparamref name="T"/> exist.</returns>
         bool UseConverter<T>(object[] before, string parse, object[] after, out ValueTask<T> converted);
+
+        /// <summary>
+        /// Cast a string to a type instance
+        /// </summary>
+        /// <param name="before">Any arguments that come before, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
+        /// <param name="parse">Parsing</param>
+        /// <param name="after">Any arguments that come after, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
+        /// <param name="castType">The type to cast to</param>
+        /// <param name="converted">The converted object</param>
+        /// <param name="error">Any errors found</param>
+        /// <returns>True if a conversion was successful</returns>
+        bool CastString(object[] before, string parse, object[] after, Type castType, out ValueTask<object> converted, out string error);
+        /// <summary>
+        /// Cast a string to a type instance
+        /// </summary>
+        /// <param name="before">Any arguments that come before, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
+        /// <param name="parse">Parsing</param>
+        /// <param name="after">Any arguments that come after, used for <see cref="IConverter{T}.Convert(object[], string, object[])"/></param>
+        /// <typeparam name="T">The type to cast to</typeparam>
+        /// <param name="converted">The converted object</param>
+        /// <param name="error">Any errors found</param>
+        /// <returns>True if a conversion was successful</returns>
+        bool CastString<T>(object[] before, string parse, object[] after, out ValueTask<T> converted, out string error);
     }
 }

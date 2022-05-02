@@ -18,6 +18,12 @@ namespace StringParser
         /// <param name="invokes">The parameters used to invoke the <paramref name="method"/></param>
         /// <param name="returnInstance">Return of the command if any</param>
         ValueTask OnCommandExecute(MethodInfo method, object instance, object[] invokes, object? returnInstance);
+
+        /// <summary>
+        /// The <see cref="Handler"/> used to invoke this command!
+        /// </summary>
+        Handler UsedHandler { get; set; }
+        
 #pragma warning restore CS1998
 #nullable disable
     }

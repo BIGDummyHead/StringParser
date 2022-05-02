@@ -135,11 +135,14 @@ public sealed class Handler
 
             foreach (ParameterInfo pi in command.parameters)
             {
-                if (!command.parameterAttributes.TryGetValue(pi, out CommandParameterAttribute cpa))
+                if (!command.parameterAttributes.TryGetValue(pi, out IEnumerable<CommandParameterAttribute> _cpas))
                     continue;
 
-                cpa.Handler = this;
-                stringArgs = await cpa.OnCollect(pi, pre, stringArgs, aft, command.parameters);
+                foreach (CommandParameterAttribute cpa in _cpas)
+                {
+                    cpa.Handler = this;
+                    stringArgs = await cpa.OnCollect(pi, pre, stringArgs, aft, command.parameters);
+                }
             }
 
             if (command.parameters.Length == pre.Length + stringArgs.Length + aft.Length)
@@ -247,12 +250,16 @@ public sealed class Handler
         if (i is null)
             throw new Exceptions.InvalidModuleException(reg, "could not be created because an empty CTOR does not exist.");
 
+
+        (i as ICommandModule).UsedHandler = this;
+
         foreach (MethodInfo method in typeMethods)
         {
             CommandAttribute cmd;
-            if(method.GetCustomAttribute<IgnoreAttribute>() is null && 
+            if (method.GetCustomAttribute<IgnoreAttribute>() is null &&
                 (cmd = method.GetCustomAttribute<CommandAttribute>()) is not null)
             {
+
                 AddCommand(cmd, i, method);
                 cmd.OnRegister(reg, method);
             }
@@ -289,6 +296,8 @@ public sealed class Handler
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public void UnRegisterModule<T>() => UnRegisterModule(typeof(T));
+
+
 
     private void AddCommand(CommandAttribute cmd, object instance, MethodInfo info)
     {
@@ -334,10 +343,10 @@ public struct CollectedCommand
 
         ParameterCount = parameters.Length;
 
-        List<KeyValuePair<ParameterInfo, CommandParameterAttribute>> ls = new();
+        List<KeyValuePair<ParameterInfo, IEnumerable<CommandParameterAttribute>>> ls = new();
         foreach (ParameterInfo pi in parameters)
         {
-            CommandParameterAttribute cpa = pi.GetCustomAttribute<CommandParameterAttribute>();
+            var cpa = pi.GetCustomAttributes<CommandParameterAttribute>();
 
             if (cpa == null)
                 continue;
@@ -345,7 +354,7 @@ public struct CollectedCommand
             ls.Add(new(pi, cpa));
         }
 
-        parameterAttributes = new Dictionary<ParameterInfo, CommandParameterAttribute>(ls);
+        parameterAttributes = new Dictionary<ParameterInfo, IEnumerable<CommandParameterAttribute>>(ls);
         ls.GetEnumerator().Dispose();
 
     }
@@ -377,7 +386,7 @@ public struct CollectedCommand
     /// <see cref="CommandParameterAttribute"/>(s) from the <seealso cref="method"/>.
     /// </summary>
 
-    public readonly IReadOnlyDictionary<ParameterInfo, CommandParameterAttribute> parameterAttributes;
+    public readonly IReadOnlyDictionary<ParameterInfo, IEnumerable<CommandParameterAttribute>> parameterAttributes;
 
 
     /// <summary>

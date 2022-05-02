@@ -28,19 +28,15 @@ namespace StringParser
             Console.ResetColor();
         }
 
-        ConsoleColor Color(LogLevel lvl)
+        static ConsoleColor Color(LogLevel lvl)
         {
-            switch (lvl)
+            return lvl switch
             {
-                case LogLevel.Debug:
-                    return ConsoleColor.Cyan;
-                case LogLevel.Warning:
-                    return ConsoleColor.Yellow;
-                case LogLevel.Error:
-                    return ConsoleColor.Red;
-                default:
-                    return ConsoleColor.White;
-            }
+                LogLevel.Debug => ConsoleColor.Cyan,
+                LogLevel.Warning => ConsoleColor.Yellow,
+                LogLevel.Error => ConsoleColor.Red,
+                _ => ConsoleColor.White,
+            };
         }
 
         public void LogDebug(string message)

@@ -21,6 +21,13 @@ namespace StringParser
         /// <remarks>Does not use any <see cref="IConverter{T}"/></remarks>
         public static bool GlobalCastString(string from, Type castType, out ValueTask<object> converted, out string error)
         {
+            if (castType == typeof(string))
+            {
+                converted = ValueTask.FromResult<object>(from);
+                error = string.Empty;
+                return true;
+            }
+
             try
             {
                 if (castType.IsClass) //checks for default constructors with strings
@@ -98,7 +105,8 @@ namespace StringParser
             }
 
             converted = helpers.FirstOrDefault(x => x.ConversionType == type).Convert(before, parse, after);
-            return true;
+
+            return converted != default;
         }
 
         public bool UseConverter<T>(object[] before, string parse, object[] after, out ValueTask<T> converted)

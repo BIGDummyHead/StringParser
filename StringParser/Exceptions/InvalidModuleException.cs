@@ -11,8 +11,8 @@ namespace StringParser.Exceptions
         /// 
         /// </summary>
         /// <param name="type"></param>
-        /// <param name="middle"></param>
-        public InvalidModuleException(Type type, string middle) : base($"'{type.Name}' is invalid because {middle}")
+        /// <param name="reason"></param>
+        public InvalidModuleException(Type type, string reason) : base($"'{type.Name}' is invalid because {reason}")
         {
 
         }

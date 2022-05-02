@@ -23,6 +23,27 @@ namespace StringParser
         }
 
         /// <summary>
+        /// Fast array maker
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static T[] FastArr<T>(params T[] items)
+        {
+            return items;
+        }   
+
+        /// <summary>
+        /// Fast array maker
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static object[] FastArr(params object[] items)
+        {
+            return items;
+        }
+
+        /// <summary>
         /// Registers a generic converter
         /// </summary>
         /// <param name="handler"></param>
