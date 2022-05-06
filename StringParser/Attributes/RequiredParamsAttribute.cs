@@ -35,7 +35,7 @@ namespace StringParser
 
             if (args.Length < ParamCount)
             {
-                Handler.Config.ToLog("Not enough arguments for parameter " + pInfo.Name + "! Expected " + ParamCount + " arguments, got " + args.Length + "!", LogLevel.Error);
+                Handler.UserConfig.Logger?.Log("Not enough arguments for parameter " + pInfo.Name + "! Expected " + ParamCount + " arguments, got " + args.Length + "!", LogLevel.Error);
                 return Array.Empty<string>();
             }
 

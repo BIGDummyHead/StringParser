@@ -28,7 +28,7 @@ public sealed class Handler
     /// <summary>
     /// Options for your Handler
     /// </summary>
-    public HandlerConfig Config { get; init; }
+    public Config UserConfig { get; init; }
 
     /// <summary>
     /// The used converter.
@@ -40,15 +40,15 @@ public sealed class Handler
     /// 
     /// </summary>
     /// <param name="config"></param>
-    public Handler(HandlerConfig config)
+    public Handler(Config config)
     {
-        Config = config;
+        UserConfig = config;
     }
 
     /// <summary>
-    /// Create a command handler with the <see cref="HandlerConfig.Default"/>
+    /// Create a command handler with the <see cref="Config.Default"/>
     /// </summary>
-    public Handler() : this(HandlerConfig.Default)
+    public Handler() : this(Config.Default)
     {
 
     }
@@ -89,24 +89,24 @@ public sealed class Handler
     /// <exception cref="Exceptions.InvalidConversionException"></exception>
     public async Task<object?> Invoke(object[] pre, string invoker, object[] aft)
     {
-        if (invoker.Length < Config.Prefix.Length)
+        if (invoker.Length < UserConfig.Prefix.Length)
         {
-            Config.ToLog("Invalid invocation, too short", LogLevel.Error);
+            UserConfig.Logger?.Log("Invalid invocation, too short", LogLevel.Error);
             return null;
         }
 
-        string prefix = Config.HasPrefix ? invoker[0..(Config.Prefix.Length)] : string.Empty;
+        string prefix = UserConfig.HasPrefix ? invoker[0..(UserConfig.Prefix.Length)] : string.Empty;
 
-        if (Config.HasPrefix)
+        if (UserConfig.HasPrefix)
         {
-            if (!prefix.Equals(Config.Prefix, Config.Comp))
+            if (!prefix.Equals(UserConfig.Prefix, UserConfig.Comp))
             {
-                Config.ToLog($"Prefix invalid! Expected '{Config.Prefix}'", LogLevel.Information);
+                UserConfig.Logger?.Log($"Prefix invalid! Expected '{UserConfig.Prefix}'", LogLevel.Information);
                 return null;
             }
         }
 
-        string[] stringArgs = invoker.Split(Config.Separator);
+        string[] stringArgs = invoker.Split(UserConfig.Separator);
 
         string commandName = stringArgs[0][prefix.Length..];
 
@@ -114,7 +114,7 @@ public sealed class Handler
 
         MethodInfo method = null;
 
-        var filteredCommands = _command.Where(x => x.Value.Name.Equals(commandName, Config.Comp));
+        var filteredCommands = _command.Where(x => x.Value.Name.Equals(commandName, UserConfig.Comp));
 
         if (!filteredCommands.Any())
         {
@@ -125,7 +125,7 @@ public sealed class Handler
                 b += $"\r\n* {item.Key.Name}";
             }
 
-            Config.ToLog(b, LogLevel.Warning);
+            UserConfig.Logger?.Log(b, LogLevel.Warning);
             return null;
         }
 
@@ -158,7 +158,7 @@ public sealed class Handler
 
         if (method == null)
         {
-            Config.ToLog($"No command with the name of '{commandName}' has '{totalCount}' arguments.", LogLevel.Warning);
+            UserConfig.Logger?.Log($"No command with the name of '{commandName}' has '{totalCount}' arguments.", LogLevel.Warning);
             return null;
         }
 
@@ -175,7 +175,7 @@ public sealed class Handler
 
             if (!Converter.CastString(pre, arg, aft, type, out ValueTask<object> converted, out string error))
             {
-                Config.ToLog(error, LogLevel.Error);
+                UserConfig.Logger?.Log(error, LogLevel.Error);
                 return null;
             }
 
@@ -202,7 +202,7 @@ public sealed class Handler
                 nay++;
         }
 
-        if (yay >= nay && Config.ByPopularVote || !Config.ByPopularVote)
+        if (yay >= nay && UserConfig.ByPopularVote || !UserConfig.ByPopularVote)
         {
             object? result = method.Invoke(finalInfoCommand.instance, invokeArr);
 
@@ -214,7 +214,7 @@ public sealed class Handler
             return result;
         }
 
-        Config.ToLog($"Popular vote decided not to invoke '{commandName}' for method : '{method.Name}'", LogLevel.Information);
+        UserConfig.Logger?.Log($"Popular vote decided not to invoke '{commandName}' for method : '{method.Name}'", LogLevel.Information);
         return null;
     }
 
@@ -315,121 +315,103 @@ public sealed class Handler
 
         _command.Add(info, commandInfo);
     }
-}
 
-/// <summary>
-/// Specific info about a command, for allowing more commands
-/// </summary>
-public struct CollectedCommand
-{
     /// <summary>
-    /// Name provided 
+    /// Configuration for <see cref="Handler"/>
     /// </summary>
-    public string Name { get; internal set; }
-    /// <summary>
-    /// Amount of arguments to invoke the method info
-    /// </summary>
-    public int ParameterCount { get; internal set; }
-
-    internal CollectedCommand(string name, CommandAttribute cmdAttr, object instance, MethodInfo method)
+    public sealed class Config
     {
-        Name = name;
-
-        this.cmdAttr = cmdAttr;
-        this.instance = instance;
-        this.method = method;
-        isIgnored = method.GetCustomAttribute<IgnoreAttribute>() != null;
-        parameters = method.GetParameters();
-
-        ParameterCount = parameters.Length;
-
-        List<KeyValuePair<ParameterInfo, IEnumerable<CommandParameterAttribute>>> ls = new();
-        foreach (ParameterInfo pi in parameters)
+        /// <summary>
+        /// The global default Config that can be set and gotten.
+        /// </summary>
+        public static Config Default
         {
-            var cpa = pi.GetCustomAttributes<CommandParameterAttribute>();
+            get
+            {
+                return new Config(_global);
+            }
 
-            if (cpa == null)
-                continue;
+            set
+            {
+                if (value == null)
+                    return;
 
-            ls.Add(new(pi, cpa));
+                _global = value;
+            }
         }
 
-        parameterAttributes = new Dictionary<ParameterInfo, IEnumerable<CommandParameterAttribute>>(ls);
-        ls.GetEnumerator().Dispose();
+        private static Config _global = new();
+
+        /// <summary>
+        /// The prefix before each command, does not effect the names of your commands.
+        /// </summary>
+        public string Prefix { get; init; } = "";
+
+        /// <summary>
+        /// Does your command require a prefix to be invoked
+        /// </summary>
+        public bool HasPrefix => !string.IsNullOrWhiteSpace(Prefix);
+
+        /// <summary>
+        /// Determines if one false from <see cref="BaseCommandAttribute.BeforeCommandExecute(object, object[])"/> will stop a command from being invoked
+        /// </summary>
+        /// <remarks>Set to true by default</remarks>
+        public bool ByPopularVote { get; set; } = true;
+
+        /// <summary>
+        /// The logger used for the config and the <see cref="Handler"/>
+        /// </summary>
+        /// <remarks>By default the Logger is null.</remarks>
+        public ILogger? Logger { get; set; }
+
+        /// <summary>
+        /// Char that splits the commands!
+        /// </summary>
+        /// <remarks>Set to ' ' by default</remarks>
+        public char[] Separator { get; set; } = new char[] { ' ' };
+
+        /// <summary>
+        /// Uses the <see cref="string.Trim()"/> when invoking <seealso cref="Handler.Invoke(string)"/>
+        /// </summary>
+        /// <remarks>Set to true by default</remarks>
+        public bool AlwaysTrim { get; set; } = true;
+
+        /// <summary>
+        /// Allow null conversions to invoke a method.
+        /// </summary>
+        /// <remarks>Set to false by default</remarks>
+        public bool AllowNulls { get; set; } = false;
+
+        /// <summary>
+        /// Ignore case when invoking commands
+        /// </summary>
+        /// <remarks>Defaults True</remarks>
+        public bool IgnoreCase { get; set; } = true;
+
+        internal StringComparison Comp => IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        /// <summary>
+        /// A config for <see cref="Handler"/>
+        /// </summary>
+        public Config()
+        {
+        }
+
+        /// <summary>
+        /// Copies values from another config
+        /// </summary>
+        /// <param name="other">The other config to copy from!</param>
+        public Config(Config other)
+        {
+            Prefix = other.Prefix;
+            ByPopularVote = other.ByPopularVote;
+            Logger = other.Logger;
+            Separator = other.Separator;
+            AlwaysTrim = other.AlwaysTrim;
+            AllowNulls = other.AllowNulls;
+            IgnoreCase = other.IgnoreCase;
+        }
 
     }
-
-    /// <summary>
-    /// The <see cref="CommandAttribute"/> of the command
-    /// </summary>
-    public readonly CommandAttribute cmdAttr;
-    /// <summary>
-    /// The instance of the type.
-    /// </summary>
-    public readonly object instance;
-    /// <summary>
-    /// The method to invoke.
-    /// </summary>
-    public readonly MethodInfo method;
-
-    /// <summary>
-    /// Is the method ignored.
-    /// </summary>
-    public readonly bool isIgnored;
-
-    /// <summary>
-    /// Parameters collected from the method.
-    /// </summary>
-    public readonly ParameterInfo[] parameters;
-
-    /// <summary>
-    /// <see cref="CommandParameterAttribute"/>(s) from the <seealso cref="method"/>.
-    /// </summary>
-
-    public readonly IReadOnlyDictionary<ParameterInfo, IEnumerable<CommandParameterAttribute>> parameterAttributes;
-
-
-    /// <summary>
-    /// Checks if the left and right have the same name and parameter count.
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    public static bool operator ==(CollectedCommand left, CollectedCommand right)
-    {
-        if (string.IsNullOrEmpty(left.Name) || string.IsNullOrEmpty(right.Name))
-            return false;
-
-        return left.Name.Equals(right.Name, StringComparison.OrdinalIgnoreCase) && left.ParameterCount == right.ParameterCount;
-    }
-
-    /// <summary>
-    /// Checks if the left and right do not have the same name and parameter count.
-    /// </summary>
-    /// <param name="left"></param>
-    /// <param name="right"></param>
-    public static bool operator !=(CollectedCommand left, CollectedCommand right)
-    {
-        return !(left == right);
-    }
-
-    /// <summary>
-    /// </summary>
-    public override int GetHashCode()
-    {
-        return base.GetHashCode();
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="obj"></param>
-    /// <returns></returns>
-    public override bool Equals(object obj)
-    {
-        if (obj.GetType() != typeof(CollectedCommand))
-            return false;
-
-        return this == (CollectedCommand)obj;
-    }
-
 }
+

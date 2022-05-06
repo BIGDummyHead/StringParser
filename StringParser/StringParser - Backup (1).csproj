@@ -42,4 +42,12 @@
     <Folder Include="Properties\" />
   </ItemGroup>
 
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="cd ..&#xD;&#xA;echo &quot;Now working in new directory&quot;&#xD;&#xA;cd" />
+  </Target>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="cd ..&#xD;&#xA;&#xD;&#xA;call pub.bat 15 Debug 1.0.0 y" />
+  </Target>
+
 </Project>

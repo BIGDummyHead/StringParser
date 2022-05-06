@@ -364,3 +364,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /.vscode
 /CommandParser/Program.cs
+/pub.bat
