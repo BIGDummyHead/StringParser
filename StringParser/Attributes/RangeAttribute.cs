@@ -18,7 +18,7 @@ public class RangeAttribute : CommandParameterAttribute
     const int m_min = 0;
 
     /// <summary>
-    /// 
+    ///
     /// </summary>
     /// <param name="min"></param>
     /// <param name="max"></param>
