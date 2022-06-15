@@ -61,7 +61,7 @@ public class RangeAttribute : CommandParameterAttribute
         int stringArgLen = parameters.Length - bef.Length - aft.Length;
 
         //check if the last parameter is the one we are looking for
-        if (parameters[stringArgLen - 1] != pInfo)
+        if (parameters[stringArgLen + bef.Length - 1] != pInfo)
         {
             //Invalid use on {pInfo.Name}. {typeof(Range).Name} must be used on the last parameter ({pparameters[^1].Name}
             Handler.UserConfig.Logger?.Log($"Invalid use on {pInfo.Name}. {typeof(Range).Name} attribute must be used on the last parameter ({parameters[^1].Name})", LogLevel.Warning);
