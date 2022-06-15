@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>1.0.0.1</PackageVersion>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ApplicationIcon />
+    <StartupObject />
+    <RootNamespace>StringParser</RootNamespace>
+    <AssemblyName>StringParser</AssemblyName>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <Authors>BIGDummyHead</Authors>
+    <Description>Create commands that can be invoked by pure string!</Description>
+    <Copyright>© 2019 - 2022 Shawn Bohn - All Rights Reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/BIGDummyHead/StringParser/wiki</PackageProjectUrl>
+    <PackageIcon>string.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/BIGDummyHead/StringParser</RepositoryUrl>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <Version>$(PackageVersion)</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>C:\Users\shawn\Desktop\StringParser-master\StringParser\bin\Debug\net6.0\StringParser.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\Images\string.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="cd ..&#xD;&#xA;echo &quot;Now working in new directory&quot;&#xD;&#xA;cd" />
+  </Target>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="cd ..&#xD;&#xA;&#xD;&#xA;call pub.bat 15 Debug 1.0.0 y" />
+  </Target>
+
+</Project>

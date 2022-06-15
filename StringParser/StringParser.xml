@@ -1,0 +1,198 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>StringParser</name>
+    </assembly>
+    <members>
+        <member name="T:StringParser.BaseCommandAttribute">
+            <summary>
+            A base attribute used for attributes above commands.
+            </summary>
+        </member>
+        <member name="M:StringParser.BaseCommandAttribute.BeforeCommandExecute(System.Object,System.Object[])">
+            <summary>
+            Before the command is executed
+            </summary>
+            <param name="classInstance">The instance the command will be invoked with</param>
+            <param name="methodParams">The parameters the command will be invoked with</param>
+            <returns>Should the command continue?</returns>
+            <remarks>If returns false, the command will not execute and neither will <see cref="M:StringParser.BaseCommandAttribute.AfterCommandExecute(System.Object,System.Object[])"/></remarks>
+        </member>
+        <member name="M:StringParser.BaseCommandAttribute.AfterCommandExecute(System.Object,System.Object[])">
+            <summary>
+            After the command has executed
+            </summary>
+            <param name="classInstance">The instance the command was invoked with</param>
+            <param name="methodParams">The parameters the command was invoked with</param>
+        </member>
+        <member name="T:StringParser.BaseCommandModule">
+            <summary>
+            A base for all command modules
+            </summary>
+        </member>
+        <member name="M:StringParser.BaseCommandModule.OnCommandExecute(System.Reflection.MethodInfo,System.Object,System.Object[])">
+            <summary>
+            Called when any in the module is invoked. 
+            </summary>
+            <param name="method">The method invoked</param>
+            <param name="instance">The instance used to invoke the <paramref name="method"/></param>
+            <param name="invokes">The parameters used to invoke the <paramref name="method"/></param>
+        </member>
+        <member name="T:StringParser.CommandAttribute">
+            <summary>
+            The command attribute, used over any method within a <see cref="T:StringParser.BaseCommandModule"/>
+            </summary>
+        </member>
+        <member name="P:StringParser.CommandAttribute.CommandName">
+            <summary>
+            The name of the command
+            </summary>
+        </member>
+        <member name="P:StringParser.CommandAttribute.UsingMethodName">
+            <summary>
+            Is the command using the name of the method to invoke?
+            </summary>
+        </member>
+        <member name="M:StringParser.CommandAttribute.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="name">The name of the command</param>
+        </member>
+        <member name="M:StringParser.CommandAttribute.#ctor">
+            <summary>
+            Use the method name instead of custom name
+            </summary>
+        </member>
+        <member name="T:StringParser.CommandHandler">
+            <summary>
+            A handler to invoke commands.
+            </summary>
+        </member>
+        <member name="P:StringParser.CommandHandler.Commands">
+            <summary>
+            Commands being invoked.
+            </summary>
+        </member>
+        <member name="P:StringParser.CommandHandler.Options">
+            <summary>
+            Options for your Handler
+            </summary>
+        </member>
+        <member name="M:StringParser.CommandHandler.#ctor(StringParser.HandlerConfig)">
+            <summary>
+            
+            </summary>
+            <param name="config"></param>
+        </member>
+        <member name="M:StringParser.CommandHandler.#ctor">
+            <summary>
+            Create a command handler with the <see cref="P:StringParser.HandlerConfig.Default"/>
+            </summary>
+        </member>
+        <member name="M:StringParser.CommandHandler.Invoke(System.String)">
+            <summary>
+            Invoke a command, must start with the prefix - name - arguments
+            <para>Example: !name arg1 arg2</para>
+            </summary>
+            <param name="invoker"></param>
+            <exception cref="T:StringParser.Exceptions.InvalidConversionException"></exception>
+        </member>
+        <member name="M:StringParser.CommandHandler.Register``1">
+            <summary>
+            Register a type with <see cref="T:StringParser.CommandAttribute"/>
+            </summary>
+            <typeparam name="T"></typeparam>
+            <exception cref="T:StringParser.Exceptions.InvalidModuleException"></exception>
+            <exception cref="T:StringParser.Exceptions.CommandExistException"></exception>
+        </member>
+        <member name="M:StringParser.CommandHandler.Register(System.Type)">
+            <summary>
+            Register a type with <see cref="T:StringParser.CommandAttribute"/>, must inherit <seealso cref="T:StringParser.BaseCommandModule"/>
+            </summary>
+            <param name="reg"></param>
+            <exception cref="T:StringParser.Exceptions.InvalidModuleException"></exception>
+            <exception cref="T:StringParser.Exceptions.CommandExistException"></exception>
+        </member>
+        <member name="T:StringParser.Exceptions.CommandExistException">
+            <summary>
+            Thrown when a command exist
+            </summary>
+        </member>
+        <member name="M:StringParser.Exceptions.CommandExistException.#ctor(System.String)">
+            <summary>
+            
+            </summary>
+            <param name="commandName"></param>
+        </member>
+        <member name="T:StringParser.Exceptions.InvalidConversionException">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:StringParser.Exceptions.InvalidConversionException.#ctor(System.Type,System.Type)">
+            <summary>
+            
+            </summary>
+            <param name="convertFrom"></param>
+            <param name="convertTo"></param>
+        </member>
+        <member name="T:StringParser.Exceptions.InvalidModuleException">
+            <summary>
+            When a module is invalid to be registered
+            </summary>
+        </member>
+        <member name="M:StringParser.Exceptions.InvalidModuleException.#ctor(System.Type,System.String)">
+            <summary>
+            
+            </summary>
+            <param name="type"></param>
+            <param name="middle"></param>
+        </member>
+        <member name="T:StringParser.HandlerConfig">
+            <summary>
+            Configuration for <see cref="T:StringParser.CommandHandler"/>
+            </summary>
+        </member>
+        <member name="P:StringParser.HandlerConfig.Default">
+            <summary>
+            A default config 
+            </summary>
+        </member>
+        <member name="P:StringParser.HandlerConfig.Prefix">
+            <summary>
+            The prefix before each command, does not effect the names of your commands.
+            </summary>
+        </member>
+        <member name="P:StringParser.HandlerConfig.HasPrefix">
+            <summary>
+            Does your command require a prefix to be invoked
+            </summary>
+        </member>
+        <member name="E:StringParser.HandlerConfig.OnLog">
+            <summary>
+            Writes any errors to this 
+            </summary>
+        </member>
+        <member name="P:StringParser.HandlerConfig.IgnoreCase">
+            <summary>
+            Ignore case when invoking commands
+            </summary>
+        </member>
+        <member name="M:StringParser.HandlerConfig.#ctor">
+            <summary>
+            A config for <see cref="T:StringParser.CommandHandler"/>
+            </summary>
+        </member>
+        <member name="T:StringParser.IgnoreAttribute">
+            <summary>
+            Ignore this command from being registered.
+            </summary>
+        </member>
+        <member name="T:StringParser.RemainingTextAttribute">
+            <summary>
+            A special attribute, used for remaining text for a command, applied to the very last argument.
+            </summary>
+        </member>
+    </members>
+</doc>

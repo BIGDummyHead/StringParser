@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageVersion>1.0.0.1</PackageVersion>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ApplicationIcon />
+    <StartupObject />
+    <RootNamespace>StringParser</RootNamespace>
+    <AssemblyName>StringParser</AssemblyName>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>BIGDummyHead</Authors>
+    <Description>Create commands that can be invoked by pure string!</Description>
+    <Copyright>© 2019 - 2022 Shawn Bohn - All Rights Reserved.</Copyright>
+    <PackageProjectUrl>https://github.com/BIGDummyHead/StringParser/wiki</PackageProjectUrl>
+    <PackageIcon>string.png</PackageIcon>
+    <PackageReadmeFile>read.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/BIGDummyHead/StringParser</RepositoryUrl>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <Version>$(PackageVer)</Version>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>C:\Users\shawn\source\repos\CommandParser-Sol\CommandParser\CommandParser.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\read.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\string.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="cd ../&#xD;&#xA;dir&#xD;&#xA;&#xD;&#xA;echo $(ConfigurationName) &#xD;&#xA;echo $(PackageVersion)&#xD;&#xA;echo $(Copyright)&#xD;&#xA;&#xD;&#xA;call pub.bat $(ConfigurationName) $(PackageVersion)" />
+  </Target>
+
+</Project>
